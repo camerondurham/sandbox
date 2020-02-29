@@ -4,9 +4,9 @@
 
 
 #include <stdio.h>      // printf
- 
+
 #define PI 3.14159265359
- 
+
 int main()
 {
 // Using a defined macro that has a definition set
@@ -23,6 +23,6 @@ int main()
 #else
     printf("bye\n");
 #endif
- 
+
     return 0;
 }

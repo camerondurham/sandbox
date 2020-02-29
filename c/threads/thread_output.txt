@@ -1,0 +1,67 @@
+Hello from thread 0
+Hello from thread 1
+Hello from thread 2
+Hello from thread 8
+Hello from thread 4
+Hello from thread 9
+Hello from thread 6
+Hello from thread 7
+Hello from thread 3
+Hello from thread 5
+Thread 0 returned with 0
+Thread 1 returned with 0
+Thread 2 returned with 0
+Thread 3 returned with 0
+Thread 4 returned with 0
+Thread 5 returned with 0
+Thread 6 returned with 0
+Thread 7 returned with 0
+Thread 8 returned with 0
+Thread 9 returned with 0
+Main thread done.
+
+
+Hello from thread 0
+Hello from thread 1
+Hello from thread 8
+Hello from thread 4
+Thread 0 returned with 0
+Thread 1 returned with 0
+Hello from thread 6
+Hello from thread 7
+Hello from thread 3
+Hello from thread 9
+Hello from thread 2
+Hello from thread 5
+Thread 2 returned with 0
+Thread 3 returned with 0
+Thread 4 returned with 0
+Thread 5 returned with 0
+Thread 6 returned with 0
+Thread 7 returned with 0
+Thread 8 returned with 0
+Thread 9 returned with 0
+Main thread done.
+
+Hello from thread 0
+Hello from thread 6
+Hello from thread 8
+Hello from thread 3
+Thread 0 returned with 0
+Hello from thread 5
+Hello from thread 2
+Hello from thread 7
+Hello from thread 9
+Hello from thread 1
+Hello from thread 4
+Thread 1 returned with 0
+Thread 2 returned with 0
+Thread 3 returned with 0
+Thread 4 returned with 0
+Thread 5 returned with 0
+Thread 6 returned with 0
+Thread 7 returned with 0
+Thread 8 returned with 0
+Thread 9 returned with 0
+Main thread done.
+

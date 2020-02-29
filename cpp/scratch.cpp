@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-
+#include <set>
 void printFile(std::string );
 
 int main () {
@@ -15,6 +15,8 @@ int main () {
     // std::cout << "foo: " << foo << '\n';
     // std::cout << "bar: " << bar << '\n';
     std::cout << "hello world" << std::endl;
+    std::set<int> S;
+    printf("%d\n",(S.begin() == S.end()));
 }
 
 // simple function to print characters in a file

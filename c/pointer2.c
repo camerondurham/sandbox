@@ -1,4 +1,5 @@
 #include<stdio.h>
+#define PRINT(X) printf("PRINT: %d", X);
 
 int main(void){
 	/*pointer t of integer type */
@@ -15,6 +16,8 @@ int main(void){
 	printf("Address of p is: %u\n", &p);
 	//another statement to print value of var
 	printf("Value of var is: %d\n", *p);
+
+    PRINT(var);
 
 	getchar();
 	return 0;
