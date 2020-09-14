@@ -1,5 +1,6 @@
 //!
-#![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
+#![warn(missing_debug_implementations, rust_2018_idioms)]
+// #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 
 #[derive(Debug)]
 pub struct StrSplit<'haystack, D> {
