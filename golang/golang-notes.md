@@ -119,19 +119,19 @@ func main() {
     // braces are required
     x := -9
     if x < 0  {
-    	fmt.Println(math.Sqrt(-x), "i")
+        fmt.Println(math.Sqrt(-x), "i")
     }
-    
+
     // if with a short statement
     // if's can start with a short statement to execute before the condition
-    
+
     if remainder := x % 13; remainder != 0 {
-    	fmt.Println("13 doesn't divide x evenly: ", remainder)
+        fmt.Println("13 doesn't divide x evenly: ", remainder)
     } else {
         // remainder is out of scope here
-    	fmt.Println("13 is a divisor of x")
+        fmt.Println("13 is a divisor of x")
     }
-    
+
     // switch statements
     fmt.Print("Go runs on ")
     switch os := runtime.GOOS; os {
@@ -144,10 +144,10 @@ func main() {
 		// plan9, windows
 		fmt.Printf("%s.\n", os)
     }
-    
+
     // switch statements evaluate from top to bottom,
     // stopping when a case succeeds
-    
+
     // a switch without a condition is the same as true
     t := time.Now()
     switch {
@@ -158,7 +158,7 @@ func main() {
 	default:
 		fmt.Println("Good evening.")
     }
-     
+
 }
 ```
 
