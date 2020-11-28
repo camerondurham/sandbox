@@ -30,30 +30,36 @@ func main() {
 		fmt.Printf("error opening dockerfile: %v", err)
 	}
 
-	dockerfilePath, err := filepath.Abs(testDir)
+	contextPath, err := filepath.Abs(testDir)
 	if err != nil {
 		log.Fatalf("error finding abs path: %v", err)
 	}
 
-	if _, ok := os.LookupEnv("DEBUG"); ok {
-		fmt.Printf("dockerfile context file: %s", dockerfilePath)
+	fi, _ := os.Stat(testDir)
+	if fi.Mode().IsRegular() {
+
 	}
 
-	tarDockerfile := fmt.Sprintf("%s.tar", dockerfilePath)
+	contextTarball := fmt.Sprintf("/tmp/%s.tar", filepath.Base(contextPath))
 
-	err = TarTar(tarDockerfile, []string{dockerfilePath})
+	if _, ok := os.LookupEnv("DEBUG"); ok {
+		fmt.Printf("dockerfile context file: %s\n", contextPath)
+		fmt.Printf("output filename: %s\n", contextTarball)
+	}
+
+	err = TarTar(contextTarball, []string{contextPath})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	dockerBuildContext, err := os.Open(tarDockerfile)
+	dockerBuildContext, err := os.Open(contextTarball)
 
 	defer func() {
 		dockerBuildContext.Close()
-		os.Remove(tarDockerfile)
+		os.Remove(contextTarball)
 	}()
 	opts := types.ImageBuildOptions{
-		// Context: "?",
+		Context:    dockerBuildContext,
 		Tags:       []string{"simple-alpine-test"},
 		Dockerfile: "Dockerfile.alpine",
 	}

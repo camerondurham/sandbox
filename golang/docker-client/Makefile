@@ -1,4 +1,4 @@
-all: install
+all: simple-test
 
 install: 
 	go get -t \
@@ -8,4 +8,4 @@ install:
 		github.com/docker/docker/pkg/stdcopy
 
 simple-test:
-	go run main.go
+	DEBUG=true go run main.go
