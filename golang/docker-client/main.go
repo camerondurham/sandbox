@@ -137,6 +137,91 @@ func ContextReader(contextPath string) (contextReader *bytes.Reader, err error) 
 	return contextTarReader, nil
 }
 
+// BuildImageWithContext accepts a build context path and relative Dockerfile path
+func BuildImageWithContext(ctx context.Context, cli *client.Client, dockerfile string, contextDirPath string, imageTagName string) error {
+	contextPath, err := filepath.Abs(contextDirPath)
+	if err != nil {
+		log.Printf("error finding abs path: %v", err)
+		return err
+	}
+	contextTarball := fmt.Sprintf("/tmp/%s.tar", filepath.Base(contextPath))
+
+	DebugPrint(fmt.Sprintf("dockerfile context file: %s\n", contextPath))
+	DebugPrint(fmt.Sprintf("output filename: %s\n", contextTarball))
+
+	contextTarReader, err := ContextReader(contextPath)
+	if err != nil {
+		return err
+	}
+
+	buildResponse, err := cli.ImageBuild(ctx, contextTarReader, types.ImageBuildOptions{
+		Context:    contextTarReader,
+		Tags:       []string{imageTagName},
+		Dockerfile: dockerfile,
+		Remove:     true,
+	})
+
+	if err != nil {
+		log.Printf("unable to build docker image: %v", err)
+		return err
+	}
+
+	defer buildResponse.Body.Close()
+
+	DebugPrint(buildResponse.OSType)
+
+	_, err = io.Copy(os.Stdout, buildResponse.Body)
+	if err != nil {
+		log.Fatal("unable to read image build response: ", err)
+		return err
+	}
+
+	return nil
+}
+
+// CreateContainer create container with name
+func CreateContainer(ctx context.Context, cli *client.Client, config *container.Config, containerName string) container.ContainerCreateCreatedBody {
+	createdContainerResp, err := cli.ContainerCreate(ctx, config, nil, nil, containerName)
+
+	if err != nil {
+		log.Fatal("unable to create container: ", err)
+	}
+
+	return createdContainerResp
+}
+
+// RemoveContainer delete container
+func RemoveContainer(ctx context.Context, cli *client.Client, containerName string) {
+	DebugPrint(fmt.Sprintf("removing container[%s]...", containerName))
+	if err := cli.ContainerRemove(context.Background(), containerName, types.ContainerRemoveOptions{}); err != nil {
+		log.Fatal("error removing container: ", err)
+	}
+}
+
+// StartContainer with given name
+func StartContainer(ctx context.Context, cli *client.Client, containerID string) {
+	if err := cli.ContainerStart(ctx, containerID, types.ContainerStartOptions{}); err != nil {
+		log.Fatal("unable to start container: ", err)
+	}
+}
+
+// StopContainer from running
+func StopContainer(ctx context.Context, cli *client.Client, containerID string, timeout *time.Duration) {
+
+	DebugPrint(fmt.Sprintf("removing container [%s]...", containerID))
+
+	if err := cli.ContainerStop(ctx, containerID, nil); err != nil {
+		log.Fatal("error stopping container: ", err)
+	}
+}
+
+// DebugPrint if DEBUG environment variable is set
+func DebugPrint(msg string) {
+	if _, ok := os.LookupEnv("DEBUG"); ok {
+		fmt.Println(msg)
+	}
+}
+
 // TarTar walks paths to create tar file tarName
 func TarTar(tarName string, paths []string) (err error) {
 	tarFile, err := os.Create(tarName)
@@ -223,89 +308,4 @@ func TarTar(tarName string, paths []string) (err error) {
 		}
 	}
 	return nil
-}
-
-// BuildImageWithContext accepts a build context path and relative Dockerfile path
-func BuildImageWithContext(ctx context.Context, cli *client.Client, dockerfile string, contextDirPath string, imageTagName string) error {
-	contextPath, err := filepath.Abs(contextDirPath)
-	if err != nil {
-		log.Printf("error finding abs path: %v", err)
-		return err
-	}
-	contextTarball := fmt.Sprintf("/tmp/%s.tar", filepath.Base(contextPath))
-
-	DebugPrint(fmt.Sprintf("dockerfile context file: %s\n", contextPath))
-	DebugPrint(fmt.Sprintf("output filename: %s\n", contextTarball))
-
-	contextTarReader, err := ContextReader(contextPath)
-	if err != nil {
-		return err
-	}
-
-	buildResponse, err := cli.ImageBuild(ctx, contextTarReader, types.ImageBuildOptions{
-		Context:    contextTarReader,
-		Tags:       []string{imageTagName},
-		Dockerfile: dockerfile,
-		Remove:     true,
-	})
-
-	if err != nil {
-		log.Printf("unable to build docker image: %v", err)
-		return err
-	}
-
-	defer buildResponse.Body.Close()
-
-	DebugPrint(buildResponse.OSType)
-
-	_, err = io.Copy(os.Stdout, buildResponse.Body)
-	if err != nil {
-		log.Fatal("unable to read image build response: ", err)
-		return err
-	}
-
-	return nil
-}
-
-// CreateContainer create container with name
-func CreateContainer(ctx context.Context, cli *client.Client, config *container.Config, containerName string) container.ContainerCreateCreatedBody {
-	createdContainerResp, err := cli.ContainerCreate(ctx, config, nil, nil, containerName)
-
-	if err != nil {
-		log.Fatal("unable to create container: ", err)
-	}
-
-	return createdContainerResp
-}
-
-// RemoveContainer delete container
-func RemoveContainer(ctx context.Context, cli *client.Client, containerName string) {
-	DebugPrint(fmt.Sprintf("removing container[%s]...", containerName))
-	if err := cli.ContainerRemove(context.Background(), containerName, types.ContainerRemoveOptions{}); err != nil {
-		log.Fatal("error removing container: ", err)
-	}
-}
-
-// StartContainer with given name
-func StartContainer(ctx context.Context, cli *client.Client, containerID string) {
-	if err := cli.ContainerStart(ctx, containerID, types.ContainerStartOptions{}); err != nil {
-		log.Fatal("unable to start container: ", err)
-	}
-}
-
-// StopContainer from running
-func StopContainer(ctx context.Context, cli *client.Client, containerID string, timeout *time.Duration) {
-
-	DebugPrint(fmt.Sprintf("removing container [%s]...", containerID))
-
-	if err := cli.ContainerStop(ctx, containerID, nil); err != nil {
-		log.Fatal("error stopping container: ", err)
-	}
-}
-
-// DebugPrint if DEBUG environment variable is set
-func DebugPrint(msg string) {
-	if _, ok := os.LookupEnv("DEBUG"); ok {
-		fmt.Println(msg)
-	}
 }
