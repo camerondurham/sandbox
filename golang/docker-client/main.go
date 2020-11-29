@@ -2,20 +2,22 @@ package main
 
 import (
 	"archive/tar"
-	"compress/gzip"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
-const testDir = "dockerfile-test"
+const (
+	testDir        = "dockerfile-test"
+	dockerfileName = "Dockerfile.alpine"
+)
 
 func main() {
 	cli, err := client.NewEnvClient()
@@ -26,18 +28,10 @@ func main() {
 	ListRunning(cli)
 
 	// build image
-	if err != nil {
-		fmt.Printf("error opening dockerfile: %v", err)
-	}
 
 	contextPath, err := filepath.Abs(testDir)
 	if err != nil {
 		log.Fatalf("error finding abs path: %v", err)
-	}
-
-	fi, _ := os.Stat(testDir)
-	if fi.Mode().IsRegular() {
-
 	}
 
 	contextTarball := fmt.Sprintf("/tmp/%s.tar", filepath.Base(contextPath))
@@ -47,28 +41,22 @@ func main() {
 		fmt.Printf("output filename: %s\n", contextTarball)
 	}
 
-	err = TarTar(contextTarball, []string{contextPath})
+	// err = TarTar(contextTarball, []string{contextPath})
+	contextTarReader, err := ContextReader(contextPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	dockerBuildContext, err := os.Open(contextTarball)
-
-	defer func() {
-		dockerBuildContext.Close()
-		os.Remove(contextTarball)
-	}()
-	opts := types.ImageBuildOptions{
-		Context:    dockerBuildContext,
-		Tags:       []string{"simple-alpine-test"},
-		Dockerfile: "Dockerfile.alpine",
-	}
-
-	buildResponse, err := cli.ImageBuild(context.Background(), dockerBuildContext, opts)
+	buildResponse, err := cli.ImageBuild(context.Background(), contextTarReader, types.ImageBuildOptions{
+		Context:    contextTarReader,
+		Tags:       []string{"simple-alpine-test-tar-read"},
+		Dockerfile: dockerfileName,
+	})
 
 	if err != nil {
-		fmt.Printf("error building image: %v", err)
+		log.Fatal("unable to build docker image: ", err)
 	}
+
 	defer buildResponse.Body.Close()
 
 	fmt.Println(buildResponse.OSType)
@@ -91,6 +79,72 @@ func ListRunning(cli *client.Client) {
 	}
 }
 
+// ContextReader reads path in to tar buffer
+func ContextReader(contextPath string) (contextReader *bytes.Reader, err error) {
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+	defer tw.Close()
+
+	// validate path
+	path := filepath.Clean(contextPath)
+	// absPath, err := filepath.Abs(path)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	walker := func(file string, finfo os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// fill in header info using func FileInfoHeader
+		hdr, err := tar.FileInfoHeader(finfo, finfo.Name())
+		if err != nil {
+			return err
+		}
+		relFilePath := file
+		if filepath.IsAbs(path) {
+			relFilePath, err = filepath.Rel(path, file)
+			if err != nil {
+				return err
+			}
+		}
+
+		// ensure header has relative file path
+		hdr.Name = relFilePath
+
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+
+		// if file is a dir, don't continue
+		if finfo.Mode().IsDir() {
+			return nil
+		}
+
+		// add file to tar
+		srcFile, err := os.Open(file)
+		if err != nil {
+			return err
+		}
+		defer srcFile.Close()
+		_, err = io.Copy(tw, srcFile)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// build tar
+	if err := filepath.Walk(path, walker); err != nil {
+		fmt.Printf("failed to add %s to tar buffer: %s\n", path, err)
+	}
+
+	contextTarReader := bytes.NewReader(buf.Bytes())
+
+	return contextTarReader, nil
+}
+
 // TarTar walks paths to create tar file tarName
 func TarTar(tarName string, paths []string) (err error) {
 	tarFile, err := os.Create(tarName)
@@ -108,15 +162,11 @@ func TarTar(tarName string, paths []string) (err error) {
 
 	// enable compression if file ends in .gz
 	tw := tar.NewWriter(tarFile)
-	if strings.HasSuffix(tarName, ".gz") || strings.HasSuffix(tarName, ".gzip") {
-		gz := gzip.NewWriter(tarFile)
-		defer gz.Close()
-		tw = tar.NewWriter(gz)
-	}
 	defer tw.Close()
 
 	// walk each specified path and add encountered file to tar
 	for _, path := range paths {
+
 		// validate path
 		path = filepath.Clean(path)
 		absPath, err := filepath.Abs(path)
