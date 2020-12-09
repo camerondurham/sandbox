@@ -1,0 +1,4 @@
+FROM alpine:3.9
+COPY file.txt /root
+COPY script.sh /root
+RUN apk add --no-cache gcc bash

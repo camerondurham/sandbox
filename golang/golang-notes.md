@@ -1,5 +1,7 @@
 # Golang
 
+## NOTE: now moved to Notion page: [🐿Golang](https://www.notion.so/cmrnxyz/Golang-30d4445e1b1b46df9f5853fdaf6f59a3)
+
 ## Tour of Go
 
 Exported names
