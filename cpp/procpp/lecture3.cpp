@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <iostream>
 #include <functional>
+#include <numeric>
 
 
 struct Student
@@ -134,6 +135,47 @@ int main(int argc, char** argv)
 	for(const auto& s : students)
 	{
 		std::cout<< s.LastName << " , " << s.FirstName << std::endl;
+	}
+
+	std::vector<int> v{2,4,6,8,10};
+	std::vector<int> vdest;
+	// back inserter automatically pushes back, makes size correct in the end
+	std::copy_n(v.begin(), 3, std::back_inserter(vdest));
+	for (const auto& vv : vdest)
+	{
+		std::cout << vv << " ";
+	}
+	std::cout << "\n";
+
+	std::vector<int> v3(10);
+
+	// reference: https://www.cplusplus.com/reference/numeric/iota/
+	// increments: {0, 1, 2, ... , 9}
+	std::iota(v3.begin(), v3.end(), 0);
+
+	for(const auto &i : v3)
+	{
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+
+	std::vector<std::vector<int>> myVecs(5);
+
+	// Generate each inner vector
+	std::generate(myVecs.begin(), myVecs.end(), [] {
+		// Populate the inner vector with 0-9
+		std::vector<int> temp(10);
+		std::iota(temp.begin(), temp.end(), 0);
+		return temp;
+	});
+
+	for(const auto &a : myVecs)
+	{
+		for(const auto &b : a)
+		{
+			std::cout << b << " ";
+		}
+		std::cout << "\n";
 	}
 
   return 0;
