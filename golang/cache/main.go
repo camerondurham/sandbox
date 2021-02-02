@@ -1,9 +1,11 @@
 package main
 
 import (
+	"container/heap"
 	"fmt"
 	"time"
 )
+
 //import "container/heap"
 
 /*
@@ -59,6 +61,62 @@ c.Keys() = ["C"]
 // "E" is removed because C is more recently used (due to the Get("C") event).
 
 */
+
+type ExpiryHeap []*Item
+
+func (h ExpiryHeap) Len() int           { return len(h) }
+func (h ExpiryHeap) Less(i, j int) bool { return h[i].expire.Before(h[j].expire) }
+func (h ExpiryHeap) Swap(i, j int) {
+	h[i], h[j] = h[j], h[i]
+	h[i].expiryHeapIndex = i
+	h[j].expiryHeapIndex = j
+}
+
+func (h *ExpiryHeap) Push(x interface{}) {
+	// Push and Pop use pointer receivers because they modify the slice's length,
+	// not just its contents.
+	*h = append(*h, x.(*Item))
+	arr := *h
+	n := len(arr)
+	last := arr[n-1]
+	last.expiryHeapIndex = n - 1
+}
+
+func (h *ExpiryHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
+}
+
+type PriorityHeap []*Item
+
+func (h PriorityHeap) Len() int           { return len(h) }
+func (h PriorityHeap) Less(i, j int) bool { return h[i].priority < h[j].priority }
+func (h PriorityHeap) Swap(i, j int) {
+	h[i], h[j] = h[j], h[i]
+	h[i].priorityIndex = i
+	h[j].priorityIndex = j
+}
+
+func (h *PriorityHeap) Push(x interface{}) {
+	// Push and Pop use pointer receivers because they modify the slice's length,
+	// not just its contents.
+	*h = append(*h, x.(*Item))
+	arr := *h
+	n := len(arr)
+	last := arr[n-1]
+	last.priorityIndex = n - 1
+}
+
+func (h *PriorityHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
+}
 
 // Begin TimeHeap
 // An TimeHeap is a min-heap of timestamps.
@@ -117,6 +175,9 @@ type Item struct {
 	value    interface{}
 	priority int
 	expire   time.Time
+
+	expiryHeapIndex int
+	priorityIndex   int
 
 	prev *Item
 	next *Item
@@ -190,8 +251,56 @@ func (c *PriorityExpiryCache) evictItems() {
 
 // TODO(interviewee): writeup time/space complexity for each basic operation, describe and justify choices
 func main() {
-	messages := []string { "message1", "message2", "message3" }
+	messages := []string{"message1", "message2", "message3"}
 	for i := 0; i < len(messages); i++ {
 		fmt.Println(messages[i])
 	}
+
+	expiryHeap := &ExpiryHeap{}
+	priorityHeap := &PriorityHeap{}
+
+	i1 := &Item{
+		key:      "A",
+		value:    1,
+		priority: 6,
+		expire:   time.Now(),
+		prev:     nil,
+		next:     nil,
+	}
+
+	i2 := &Item{
+		key:      "B",
+		value:    2,
+		priority: 1,
+		expire:   time.Now(),
+		prev:     nil,
+		next:     nil,
+	}
+
+	i3 := &Item{
+		key:      "C",
+		value:    3,
+		priority: 3,
+		expire:   time.Now(),
+		prev:     nil,
+		next:     nil,
+	}
+
+	heap.Push(expiryHeap, i1)
+	heap.Push(expiryHeap, i2)
+	heap.Push(expiryHeap, i3)
+
+	heap.Push(priorityHeap, i1)
+	heap.Push(priorityHeap, i2)
+	heap.Push(priorityHeap, i3)
+
+	fmt.Printf("expiry: %v, priority: %v\n", i1.expiryHeapIndex, i1.priorityIndex)
+	fmt.Printf("expiry: %v, priority: %v\n", i2.expiryHeapIndex, i2.priorityIndex)
+	fmt.Printf("expiry: %v, priority: %v\n", i3.expiryHeapIndex, i3.priorityIndex)
+
+	for ; priorityHeap.Len() > 0; {
+		pri := heap.Pop(priorityHeap)
+		fmt.Printf("priority: %v\n", pri.(*Item).priority)
+	}
+
 }
