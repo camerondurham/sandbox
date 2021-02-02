@@ -118,57 +118,6 @@ func (h *PriorityHeap) Pop() interface{} {
 	return x
 }
 
-// Begin TimeHeap
-// An TimeHeap is a min-heap of timestamps.
-type TimeHeap []time.Time
-
-func (h TimeHeap) Len() int           { return len(h) }
-func (h TimeHeap) Less(i, j int) bool { return h[i].Before(h[j]) }
-func (h TimeHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-func (h *TimeHeap) Push(x interface{}) {
-	// Push and Pop use pointer receivers because they modify the slice's length,
-	// not just its contents.
-	*h = append(*h, x.(time.Time))
-}
-
-func (h *TimeHeap) Pop() interface{} {
-	old := *h
-	n := len(old)
-	x := old[n-1]
-	*h = old[0 : n-1]
-	return x
-}
-
-// End TimeHeap
-
-// Begin IntHeap
-
-// Source: https://golang.org/pkg/container/heap/
-
-// An IntHeap is a min-heap of ints.
-type IntHeap []int
-
-func (h IntHeap) Len() int           { return len(h) }
-func (h IntHeap) Less(i, j int) bool { return h[i] < h[j] }
-func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-func (h *IntHeap) Push(x interface{}) {
-	// Push and Pop use pointer receivers because they modify the slice's length,
-	// not just its contents.
-	*h = append(*h, x.(int))
-}
-
-func (h *IntHeap) Pop() interface{} {
-	old := *h
-	n := len(old)
-	x := old[n-1]
-	*h = old[0 : n-1]
-	return x
-}
-
-// End IntHeap
-
 // Item should provide O(1) access to pointer in priorities and expiryTimes maps
 type Item struct {
 	key      string
@@ -179,13 +128,45 @@ type Item struct {
 	expiryHeapIndex int
 	priorityIndex   int
 
-	prev *Item
-	next *Item
+	priorityListNode *LinkedListNode
+	expiryListNode   *LinkedListNode
+}
+
+type LinkedListNode struct {
+	prev *LinkedListNode
+	next *LinkedListNode
+	key  string
 }
 
 type LinkedList struct {
-	head *Item
-	tail *Item
+	head *LinkedListNode
+	tail *LinkedListNode
+}
+
+func (ll *LinkedList) Prepend(key string) *LinkedListNode {
+	if ll.head == nil && ll.tail == nil {
+		node := &LinkedListNode{
+			prev: nil,
+			next: nil,
+			key:  key,
+		}
+		ll.head = node
+		ll.tail = node
+		return node
+	} else {
+		node := &LinkedListNode{
+			prev: nil,
+			next: ll.tail,
+			key:  key,
+		}
+		ll.tail.prev = node
+		ll.tail = node
+		return node
+	}
+}
+
+func (ll *LinkedList) MoveToFront(node *LinkedListNode) {
+	// TODO: implement
 }
 
 type PriorityExpiryCache struct {
@@ -193,16 +174,21 @@ type PriorityExpiryCache struct {
 
 	// TODO(cadurham): implement pointer into items map
 	items       map[string]*Item
-	expiryTimes map[time.Time]*Item
+	expiryTimes map[time.Time]*LinkedList
 	priorities  map[int]*LinkedList
 
-	expiryValues   TimeHeap
-	priorityValues IntHeap
+	expiryValues   *ExpiryHeap
+	priorityValues *PriorityHeap
 }
 
 func NewCache(maxItems int) *PriorityExpiryCache {
 	return &PriorityExpiryCache{
-		maxItems: maxItems,
+		maxItems:       maxItems,
+		items:          make(map[string]*Item),
+		expiryTimes:    make(map[time.Time]*LinkedList),
+		priorities:     make(map[int]*LinkedList),
+		expiryValues:   &ExpiryHeap{},
+		priorityValues: &PriorityHeap{},
 	}
 }
 
@@ -233,6 +219,33 @@ func (c *PriorityExpiryCache) Get(key string) interface{} {
 
 func (c *PriorityExpiryCache) Set(key string, value interface{}, priority int, expire time.Time) {
 	// ... the interviewee does not need to implement this.
+	item := &Item{
+		key:      key,
+		value:    value,
+		priority: priority,
+		expire:   expire,
+	}
+
+	if list, ok := c.priorities[priority]; ok {
+		node := list.Prepend(key)
+		item.priorityListNode = node
+	} else {
+		ll := &LinkedList{}
+		ll.Prepend(key)
+		c.priorities[priority] = ll
+	}
+
+	if list, ok := c.expiryTimes[expire]; ok {
+		node := list.Prepend(key)
+		item.expiryListNode = node
+	} else {
+		ll := &LinkedList{}
+		ll.Prepend(key)
+		c.expiryTimes[expire] = ll
+	}
+
+	heap.Push(c.expiryValues, item)
+	heap.Push(c.priorityValues, item)
 
 	c.evictItems()
 }
@@ -260,8 +273,6 @@ func main() {
 		value:    1,
 		priority: 6,
 		expire:   time.Now(),
-		prev:     nil,
-		next:     nil,
 	}
 
 	i2 := &Item{
@@ -269,8 +280,6 @@ func main() {
 		value:    2,
 		priority: 1,
 		expire:   time.Now(),
-		prev:     nil,
-		next:     nil,
 	}
 
 	i3 := &Item{
@@ -278,8 +287,6 @@ func main() {
 		value:    3,
 		priority: 3,
 		expire:   time.Now(),
-		prev:     nil,
-		next:     nil,
 	}
 
 	i4 := &Item{
@@ -287,8 +294,6 @@ func main() {
 		value:    3,
 		priority: 10,
 		expire:   time.Now(),
-		prev:     nil,
-		next:     nil,
 	}
 
 	items := []*Item{i1, i2, i3, i4}
@@ -309,4 +314,11 @@ func main() {
 		fmt.Printf("priority: %v\n", pri.(*Item).priority)
 	}
 
+	pec := NewCache(5)
+	pec.Set("A", 1, 5, time.Now())
+	pec.Set("B", 2, 15, time.Now())
+	pec.Set("C", 3, 5, time.Now())
+	pec.Set("D", 4, 1, time.Now())
+	pec.Set("E", 5, 5, time.Now())
+	pec.Get("C")
 }
