@@ -251,10 +251,6 @@ func (c *PriorityExpiryCache) evictItems() {
 
 // TODO(interviewee): writeup time/space complexity for each basic operation, describe and justify choices
 func main() {
-	messages := []string{"message1", "message2", "message3"}
-	for i := 0; i < len(messages); i++ {
-		fmt.Println(messages[i])
-	}
 
 	expiryHeap := &ExpiryHeap{}
 	priorityHeap := &PriorityHeap{}
@@ -286,19 +282,29 @@ func main() {
 		next:     nil,
 	}
 
-	heap.Push(expiryHeap, i1)
-	heap.Push(expiryHeap, i2)
-	heap.Push(expiryHeap, i3)
+	i4 := &Item{
+		key:      "C",
+		value:    3,
+		priority: 10,
+		expire:   time.Now(),
+		prev:     nil,
+		next:     nil,
+	}
 
-	heap.Push(priorityHeap, i1)
-	heap.Push(priorityHeap, i2)
-	heap.Push(priorityHeap, i3)
+	items := []*Item{i1, i2, i3, i4}
 
-	fmt.Printf("expiry: %v, priority: %v\n", i1.expiryHeapIndex, i1.priorityIndex)
-	fmt.Printf("expiry: %v, priority: %v\n", i2.expiryHeapIndex, i2.priorityIndex)
-	fmt.Printf("expiry: %v, priority: %v\n", i3.expiryHeapIndex, i3.priorityIndex)
+	for _, v := range items {
+		heap.Push(expiryHeap, v)
+		heap.Push(priorityHeap, v)
+	}
 
-	for ; priorityHeap.Len() > 0; {
+	for _, v := range items {
+		fmt.Printf("expiry: %v, priority: %v\n", v.expiryHeapIndex, v.priorityIndex)
+	}
+
+	heap.Remove(priorityHeap, i1.priorityIndex)
+
+	for priorityHeap.Len() > 0 {
 		pri := heap.Pop(priorityHeap)
 		fmt.Printf("priority: %v\n", pri.(*Item).priority)
 	}
