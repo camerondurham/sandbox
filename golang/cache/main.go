@@ -1,7 +1,10 @@
 package main
 
-import "time"
-import "container/heap"
+import (
+	"fmt"
+	"time"
+)
+//import "container/heap"
 
 /*
 You can use any language.
@@ -83,6 +86,8 @@ func (h *TimeHeap) Pop() interface{} {
 
 // Begin IntHeap
 
+// Source: https://golang.org/pkg/container/heap/
+
 // An IntHeap is a min-heap of ints.
 type IntHeap []int
 
@@ -106,6 +111,7 @@ func (h *IntHeap) Pop() interface{} {
 
 // End IntHeap
 
+// Item should provide O(1) access to pointer in priorities and expiryTimes maps
 type Item struct {
 	key      string
 	value    interface{}
@@ -123,12 +129,13 @@ type LinkedList struct {
 
 type PriorityExpiryCache struct {
 	maxItems int
-	// TODO(interviewee): implement this
+
+	// TODO(cadurham): implement pointer into items map
 	items       map[string]*Item
-	expireTimes map[time.Time]*Item
+	expiryTimes map[time.Time]*Item
 	priorities  map[int]*LinkedList
 
-	expireValues   TimeHeap
+	expiryValues   TimeHeap
 	priorityValues IntHeap
 }
 
@@ -142,14 +149,25 @@ func (c *PriorityExpiryCache) Get(key string) interface{} {
 	// ... the interviewee does not need to implement this.
 
 	// check if key is in items
+	if item, ok := c.items[key]; ok {
 
-	// retrieve itme from priorities
-	item := c.items[key]
+		// check if key is expired
+		if time.Now().After(item.expire) {
+			return nil
+		}
 
-	// (LRU) HEAD -> N1 -> TAIL (Recently Used)
-	// item.expire
+		// retrieve item from priorities
 
-	return nil
+		// (LRU) HEAD -> N1 -> TAIL (Recently Used)
+
+		// get key into the priorities map
+		// move item to tail of list
+
+		return item
+	} else {
+		return nil
+	}
+
 }
 
 func (c *PriorityExpiryCache) Set(key string, value interface{}, priority int, expire time.Time) {
@@ -167,7 +185,13 @@ func (c *PriorityExpiryCache) SetMaxItems(maxItems int) {
 // evictItems will evict items from the cache to make room for new ones.
 func (c *PriorityExpiryCache) evictItems() {
 	// TODO(interviewee): implement this
-	// log(p) + log(e); p=# distinct priorities, e=# distinct expiries
+	// log(p) + log(e); p=# distinct priorities, e=# distinct expiryTimes
 }
 
 // TODO(interviewee): writeup time/space complexity for each basic operation, describe and justify choices
+func main() {
+	messages := []string { "message1", "message2", "message3" }
+	for i := 0; i < len(messages); i++ {
+		fmt.Println(messages[i])
+	}
+}
