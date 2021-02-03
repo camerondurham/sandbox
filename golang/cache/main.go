@@ -275,11 +275,14 @@ func (c *PriorityExpiryCache) removeItem(item *Item) {
 
 	// O(e)
 	heap.Remove(c.expiryValues, *item.expiryHeapIndex)
+	delete(c.expiryIndexMap, item.expire)
+
 	c.priorities[item.priority].Remove(item.priorityListNode)
 
 	if c.priorities[item.priority].Len() == 0 {
 		// O(p)
 		heap.Remove(c.priorityValues, *item.priorityIndex)
+		delete(c.priorityIndexMap, item.priority)
 		delete(c.priorities, item.priority)
 	}
 
@@ -311,7 +314,7 @@ func main() {
 	// space for 5 keys, all 5 items are included
 	printArr(c.Keys())
 
-	time.Sleep(5)
+	time.Sleep(5 * time.Second)
 
 	// Current time = 5
 	c.SetMaxItems(4)
