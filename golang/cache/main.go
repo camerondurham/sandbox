@@ -8,61 +8,6 @@ import (
 )
 
 /*
-You can use any language.
-
-Your task is to implement a PriorityExpiryCache cache with a max capacity.  Specifically please fill out the data
-structures on the PriorityExpiryCache object and implement the entry eviction method.
-
-You do NOT need to implement the get or set methods.
-
-It should support these operations:
-  Get: Get the value of the key if the key exists in the cache and is not expired.
-  Set: Update or insert the value of the key with a priority value and expiretime.
-    Set should never ever allow more items than maxItems to be in the cache.
-    When evicting we need to evict the lowest priority item(s) which are least recently used.
-
-Example:
-p5 => priority 5
-e10 => expires at 10 seconds since epoch
-
-c = NewCache(5)
-c.Set("A", value=1, priority=5,  expireTime=100)
-c.Set("B", value=2, priority=15, expireTime=3)
-c.Set("C", value=3, priority=5,  expireTime=10)
-c.Set("D", value=4, priority=1,  expireTime=15)
-c.Set("E", value=5, priority=5,  expireTime=150)
-c.Get("C")
-
-
-// Current time = 0
-c.SetMaxItems(5)
-c.Keys() = ["A", "B", "C", "D", "E"]
-// space for 5 keys, all 5 items are included
-
-time.Sleep(5)
-
-// Current time = 5
-c.SetMaxItems(4)
-c.Keys() = ["A", "C", "D", "E"]
-// "B" is removed because it is expired.  e3 < e5
-
-c.SetMaxItems(3)
-c.Keys() = ["A", "C", "E"]
-// "D" is removed because it the lowest priority
-// D's expire time is irrelevant.
-
-c.SetMaxItems(2)
-c.Keys() = ["C", "E"]
-// "A" is removed because it is least recently used."
-// A's expire time is irrelevant.
-
-c.SetMaxItems(1)
-c.Keys() = ["C"]
-// "E" is removed because C is more recently used (due to the Get("C") event).
-
-*/
-
-/*
 	The PriorityExpiryCache uses the following data structure to manage internal data:
 		* items: the underlying data of the cache
 		* expiryValues: the oldest item in cache (the first to evict)
@@ -73,13 +18,18 @@ c.Keys() = ["C"]
 	we need to be able to remove from a heap, which is normally not supported. An int pointer
 	is saved in the expiryIndexMap and priorityIndexMap to check before re-inserting the
 	same priority and also track the index used to remove items once a priority/expiry
-	does not exist in the PEC.
+	does not exist in the PEC. The priorityIndexMap maps a priority to its index in the heap,
+	this value is updated whenever an item changes locations in the heap by the implementation
+	of the ExpiryHeap and PriorityHeap functions. The heap implementations use an array of
+	item pointers but only read the item's expiry or priority value and update the index pointers.
+	My reasoning for re-using the item data structure for these was to reduce data duplication
+	by storing
+	and to have the items store relevant data to remove an item.
 
-	In this implementation, I did assume that we would have unique expiry times given that
-	they were measured as precise epochs using `time.Time`. If expiry times should not be
-	unique, I would need an additional expiryMap to map expiry times to a doubly linked list
-	of items, similar to how priorityMap is used. This change should not affect the overall
-	runtime.
+	I assumes that we would have unique expiry times given the interface tracks time with the
+	high precision `time.Time` type. If expiry times should not be assumed unique, I would need
+	an additional expiryMap to map expiry times to a doubly linked list of items, similar to how
+	priorityMap is used. This change should not affect the overall runtime.
 
 	Suppose the PEC needed to be thread-safe. Using the maps and heaps for priority and expiry
 	would clearly not be safe in this environment. To account for this, I would choose to add
@@ -88,52 +38,6 @@ c.Keys() = ["C"]
 	operations would have to be performed atomically to avoid different threads reading
 	invalid data or crashing by mutating the underlying data structures.
 
-Complexity:
-
-Get(): O(1)
-	The only non-trivial operation is moving the accessed item to the front of the doubly
-	linked list, which is an O(1) operation to re-assign pointers. Other operations are constant as well.
-
-Set(): O(log(p) + log(e)), p = # unique priorities, e = # unique expiry times
-
-	If a key is already present in the map, we remove the item (log(p) + log(e)).
-	Inserting the new item into the items hash map is O(1), but inserting new expiry
-	and priority values into respective heaps is log(p) + log(e).
-
-	Total runtime is:
-		key is present: (log(p) + log(e)) + (log(p) + log(e)) = O(log(p) + log(e))
-
-		key is not present: (log(p) + log(e)) = O(log(p) + log(e))
-
-SetMaxItems(): see evictItems()
-
-evictItems(): O( d * (log(p) + log(e)), d = difference between # items and maxItems, p = # unique priorities, e = # unique expiry times
-	Unfortunately, I could not bring down the runtime to simply log(p) + log(e).
-
-	If the PEC contains over maxItems, we will loop over most recent expiry times
-	and then the lowest priority items in the heap while we are still over capacity.
-	removeItem() will be called at most `d` times. Accessing the lowest priority/expiry
-	items in a heap and accessing the back pointer of a doubly linked list are both O(1)
-	in this case.
-
-	Thus, runtime is O(d * (log(p) + log(e)))
-
-removeItem(): O(log(p) + log(e)), p = # unique priorities, e = # unique expiry times
-
-	removeItem deletes the pointers, key, expiry times, and priority from the PEC data structures.
-	The item's expiry value is removed from the expiryValues heap, which is O(log(e)) since
-	we will have at most log(e) (the height of heap data structure) swaps to restore the heap's
-	ordering after removing the element from the array.
-
-	We check if there are no more items with the same priority in the value using the priorityMap
-	linked list and remove the item from the priorityValues heap. This operation is O(log(p)).
-	Removing from the relevant hash maps is O(1).
-
-	Total runtime is:
-		unique priority (need to remove from priority heap):
-			2 * (log(p) + log(e)) = O(log(p) + log(e))
-		non-unique priority:
-			1 * (log(p) + log(e)) = O(log(p) + log(e))
 
 */
 type PriorityExpiryCache struct {
@@ -270,9 +174,15 @@ func NewCache(maxItems int) *PriorityExpiryCache {
 	}
 }
 
-func (c *PriorityExpiryCache) Get(key string) interface{} {
-	// ... the interviewee does not need to implement this.
+/*
 
+Get(): O(1)
+	The only non-trivial operation is moving the accessed item to the front of the doubly
+	linked list, which is an O(1) operation to re-assign pointers. Other operations are constant as well.
+
+*/
+
+func (c *PriorityExpiryCache) Get(key string) interface{} {
 	if item, ok := c.items[key]; ok {
 
 		// check if key is expired
@@ -291,8 +201,21 @@ func (c *PriorityExpiryCache) Get(key string) interface{} {
 
 }
 
+/*
+
+Set(): O(log(p) + log(e)), p = # unique priorities, e = # unique expiry times
+
+	If a key is already present in the map, we remove the item (log(p) + log(e)).
+	Inserting the new item into the items hash map is O(1), but inserting new expiry
+	and priority values into respective heaps is log(p) + log(e).
+
+	Total runtime is:
+		key is present: (log(p) + log(e)) + (log(p) + log(e)) = O(log(p) + log(e))
+
+		key is not present: (log(p) + log(e)) = O(log(p) + log(e))
+*/
+
 func (c *PriorityExpiryCache) Set(key string, value interface{}, priority int, expire time.Time) {
-	// ... the interviewee does not need to implement this.
 	var priorityIndex *int
 	var expiryHeapIndex *int
 
@@ -346,11 +269,31 @@ func (c *PriorityExpiryCache) Set(key string, value interface{}, priority int, e
 	c.evictItems()
 }
 
+/*
+
+SetMaxItems(): see evictItems()
+
+*/
 func (c *PriorityExpiryCache) SetMaxItems(maxItems int) {
 	c.maxItems = maxItems
 
 	c.evictItems()
 }
+
+/*
+
+evictItems(): O( d * (log(p) + log(e)), d = difference between # items and maxItems, p = # unique priorities, e = # unique expiry times
+	Unfortunately, I could not bring down the runtime to simply log(p) + log(e).
+
+	If the PEC contains over maxItems, we will loop over most recent expiry times
+	and then the lowest priority items in the heap while we are still over capacity.
+	removeItem() will be called at most `d` times. Accessing the lowest priority/expiry
+	items in a heap and accessing the back pointer of a doubly linked list are both O(1)
+	in this case.
+
+	Thus, runtime is O(d * (log(p) + log(e)))
+
+*/
 
 // evictItems will evict items from the cache to make room for new ones.
 func (c *PriorityExpiryCache) evictItems() {
@@ -369,6 +312,26 @@ func (c *PriorityExpiryCache) evictItems() {
 		}
 	}
 }
+
+/*
+removeItem(): O(log(p) + log(e)), p = # unique priorities, e = # unique expiry times
+
+	removeItem deletes the pointers, key, expiry times, and priority from the PEC data structures.
+	The item's expiry value is removed from the expiryValues heap, which is O(log(e)) since
+	we will have at most log(e) (the height of heap data structure) swaps to restore the heap's
+	ordering after removing the element from the array.
+
+	We check if there are no more items with the same priority in the value using the priorityMap
+	linked list and remove the item from the priorityValues heap. This operation is O(log(p)).
+	Removing from the relevant hash maps is O(1).
+
+	Total runtime is:
+		unique priority (need to remove from priority heap):
+			2 * (log(p) + log(e)) = O(log(p) + log(e))
+		non-unique priority:
+			1 * (log(p) + log(e)) = O(log(p) + log(e))
+
+*/
 
 func (c *PriorityExpiryCache) removeItem(item *Item) {
 
@@ -477,3 +440,58 @@ func main() {
 	// [ "C" ]
 	printArr(c.Keys())
 }
+
+/*
+You can use any language.
+
+Your task is to implement a PriorityExpiryCache cache with a max capacity.  Specifically please fill out the data
+structures on the PriorityExpiryCache object and implement the entry eviction method.
+
+You do NOT need to implement the get or set methods.
+
+It should support these operations:
+  Get: Get the value of the key if the key exists in the cache and is not expired.
+  Set: Update or insert the value of the key with a priority value and expiretime.
+    Set should never ever allow more items than maxItems to be in the cache.
+    When evicting we need to evict the lowest priority item(s) which are least recently used.
+
+Example:
+p5 => priority 5
+e10 => expires at 10 seconds since epoch
+
+c = NewCache(5)
+c.Set("A", value=1, priority=5,  expireTime=100)
+c.Set("B", value=2, priority=15, expireTime=3)
+c.Set("C", value=3, priority=5,  expireTime=10)
+c.Set("D", value=4, priority=1,  expireTime=15)
+c.Set("E", value=5, priority=5,  expireTime=150)
+c.Get("C")
+
+
+// Current time = 0
+c.SetMaxItems(5)
+c.Keys() = ["A", "B", "C", "D", "E"]
+// space for 5 keys, all 5 items are included
+
+time.Sleep(5)
+
+// Current time = 5
+c.SetMaxItems(4)
+c.Keys() = ["A", "C", "D", "E"]
+// "B" is removed because it is expired.  e3 < e5
+
+c.SetMaxItems(3)
+c.Keys() = ["A", "C", "E"]
+// "D" is removed because it the lowest priority
+// D's expire time is irrelevant.
+
+c.SetMaxItems(2)
+c.Keys() = ["C", "E"]
+// "A" is removed because it is least recently used."
+// A's expire time is irrelevant.
+
+c.SetMaxItems(1)
+c.Keys() = ["C"]
+// "E" is removed because C is more recently used (due to the Get("C") event).
+
+*/
