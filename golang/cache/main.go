@@ -2,11 +2,10 @@ package main
 
 import (
 	"container/heap"
+	"container/list"
 	"fmt"
 	"time"
 )
-
-//import "container/heap"
 
 /*
 You can use any language.
@@ -68,8 +67,8 @@ func (h ExpiryHeap) Len() int           { return len(h) }
 func (h ExpiryHeap) Less(i, j int) bool { return h[i].expire.Before(h[j].expire) }
 func (h ExpiryHeap) Swap(i, j int) {
 	h[i], h[j] = h[j], h[i]
-	h[i].expiryHeapIndex = i
-	h[j].expiryHeapIndex = j
+	*h[i].expiryHeapIndex = i
+	*h[j].expiryHeapIndex = j
 }
 
 func (h *ExpiryHeap) Push(x interface{}) {
@@ -79,7 +78,7 @@ func (h *ExpiryHeap) Push(x interface{}) {
 	arr := *h
 	n := len(arr)
 	last := arr[n-1]
-	last.expiryHeapIndex = n - 1
+	*last.expiryHeapIndex = n - 1
 }
 
 func (h *ExpiryHeap) Pop() interface{} {
@@ -90,14 +89,18 @@ func (h *ExpiryHeap) Pop() interface{} {
 	return x
 }
 
+func (h *ExpiryHeap) Top() interface{} {
+	return (*h)[0]
+}
+
 type PriorityHeap []*Item
 
 func (h PriorityHeap) Len() int           { return len(h) }
 func (h PriorityHeap) Less(i, j int) bool { return h[i].priority < h[j].priority }
 func (h PriorityHeap) Swap(i, j int) {
 	h[i], h[j] = h[j], h[i]
-	h[i].priorityIndex = i
-	h[j].priorityIndex = j
+	*h[i].priorityIndex = i
+	*h[j].priorityIndex = j
 }
 
 func (h *PriorityHeap) Push(x interface{}) {
@@ -107,7 +110,7 @@ func (h *PriorityHeap) Push(x interface{}) {
 	arr := *h
 	n := len(arr)
 	last := arr[n-1]
-	last.priorityIndex = n - 1
+	*last.priorityIndex = n - 1
 }
 
 func (h *PriorityHeap) Pop() interface{} {
@@ -118,6 +121,10 @@ func (h *PriorityHeap) Pop() interface{} {
 	return x
 }
 
+func (h *PriorityHeap) Top() interface{} {
+	return (*h)[0]
+}
+
 // Item should provide O(1) access to pointer in priorities and expiryTimes maps
 type Item struct {
 	key      string
@@ -125,57 +132,20 @@ type Item struct {
 	priority int
 	expire   time.Time
 
-	expiryHeapIndex int
-	priorityIndex   int
+	expiryHeapIndex *int
+	priorityIndex   *int
 
-	priorityListNode *LinkedListNode
-	expiryListNode   *LinkedListNode
-}
-
-type LinkedListNode struct {
-	prev *LinkedListNode
-	next *LinkedListNode
-	key  string
-}
-
-type LinkedList struct {
-	head *LinkedListNode
-	tail *LinkedListNode
-}
-
-func (ll *LinkedList) Prepend(key string) *LinkedListNode {
-	if ll.head == nil && ll.tail == nil {
-		node := &LinkedListNode{
-			prev: nil,
-			next: nil,
-			key:  key,
-		}
-		ll.head = node
-		ll.tail = node
-		return node
-	} else {
-		node := &LinkedListNode{
-			prev: nil,
-			next: ll.tail,
-			key:  key,
-		}
-		ll.tail.prev = node
-		ll.tail = node
-		return node
-	}
-}
-
-func (ll *LinkedList) MoveToFront(node *LinkedListNode) {
-	// TODO: implement
+	priorityListNode *list.Element
 }
 
 type PriorityExpiryCache struct {
 	maxItems int
 
 	// TODO(cadurham): implement pointer into items map
-	items       map[string]*Item
-	expiryTimes map[time.Time]*LinkedList
-	priorities  map[int]*LinkedList
+	items            map[string]*Item
+	priorities       map[int]*list.List
+	priorityIndexMap map[int]*int
+	expiryIndexMap   map[time.Time]*int
 
 	expiryValues   *ExpiryHeap
 	priorityValues *PriorityHeap
@@ -183,32 +153,30 @@ type PriorityExpiryCache struct {
 
 func NewCache(maxItems int) *PriorityExpiryCache {
 	return &PriorityExpiryCache{
-		maxItems:       maxItems,
-		items:          make(map[string]*Item),
-		expiryTimes:    make(map[time.Time]*LinkedList),
-		priorities:     make(map[int]*LinkedList),
-		expiryValues:   &ExpiryHeap{},
-		priorityValues: &PriorityHeap{},
+		maxItems:         maxItems,
+		items:            make(map[string]*Item),
+		priorities:       make(map[int]*list.List),
+		priorityIndexMap: make(map[int]*int),
+		expiryIndexMap:   make(map[time.Time]*int),
+		expiryValues:     &ExpiryHeap{},
+		priorityValues:   &PriorityHeap{},
 	}
 }
 
 func (c *PriorityExpiryCache) Get(key string) interface{} {
 	// ... the interviewee does not need to implement this.
 
-	// check if key is in items
 	if item, ok := c.items[key]; ok {
 
 		// check if key is expired
 		if time.Now().After(item.expire) {
+			c.removeItem(item)
 			return nil
 		}
 
-		// retrieve item from priorities
-
-		// (LRU) HEAD -> N1 -> TAIL (Recently Used)
-
 		// get key into the priorities map
 		// move item to tail of list
+		c.priorities[item.priority].MoveToFront(item.priorityListNode)
 
 		return item
 	} else {
@@ -219,33 +187,51 @@ func (c *PriorityExpiryCache) Get(key string) interface{} {
 
 func (c *PriorityExpiryCache) Set(key string, value interface{}, priority int, expire time.Time) {
 	// ... the interviewee does not need to implement this.
-	item := &Item{
-		key:      key,
-		value:    value,
-		priority: priority,
-		expire:   expire,
+	var priorityIndex *int
+	var expiryHeapIndex *int
+
+	if ptr, ok := c.priorityIndexMap[priority]; ok {
+		priorityIndex = ptr
+	} else {
+		priorityIndex = new(int)
 	}
 
-	if list, ok := c.priorities[priority]; ok {
-		node := list.Prepend(key)
+	if ptr, ok := c.expiryIndexMap[expire]; ok {
+		expiryHeapIndex = ptr
+	} else {
+		expiryHeapIndex = new(int)
+	}
+
+	item := &Item{
+		key:             key,
+		value:           value,
+		priority:        priority,
+		expire:          expire,
+		priorityIndex:   priorityIndex,
+		expiryHeapIndex: expiryHeapIndex,
+	}
+
+	if dll, ok := c.priorities[priority]; ok {
+		node := dll.PushFront(key)
 		item.priorityListNode = node
 	} else {
-		ll := &LinkedList{}
-		ll.Prepend(key)
+		ll := list.New()
+		node := ll.PushFront(key)
 		c.priorities[priority] = ll
+		item.priorityListNode = node
 	}
 
-	if list, ok := c.expiryTimes[expire]; ok {
-		node := list.Prepend(key)
-		item.expiryListNode = node
-	} else {
-		ll := &LinkedList{}
-		ll.Prepend(key)
-		c.expiryTimes[expire] = ll
+	if _, ok := c.priorityIndexMap[priority]; !ok {
+		c.priorityIndexMap[priority] = priorityIndex
+		heap.Push(c.priorityValues, item)
 	}
 
-	heap.Push(c.expiryValues, item)
-	heap.Push(c.priorityValues, item)
+	if _, ok := c.expiryIndexMap[expire]; !ok {
+		c.expiryIndexMap[expire] = expiryHeapIndex
+		heap.Push(c.expiryValues, item)
+	}
+
+	c.items[item.key] = item
 
 	c.evictItems()
 }
@@ -256,69 +242,97 @@ func (c *PriorityExpiryCache) SetMaxItems(maxItems int) {
 	c.evictItems()
 }
 
+func (c *PriorityExpiryCache) Keys() []string {
+	keys := make([]string, 0)
+	for k, _ := range c.items {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // evictItems will evict items from the cache to make room for new ones.
 func (c *PriorityExpiryCache) evictItems() {
-	// TODO(interviewee): implement this
+	// TODO(interviewee): implement this within runtime requirement
 	// log(p) + log(e); p=# distinct priorities, e=# distinct expiryTimes
+
+	if c.maxItems < len(c.items) {
+		// check if there are expired entries to evict
+		for time.Now().After(c.expiryValues.Top().(*Item).expire) &&
+			len(c.items) > c.maxItems {
+			c.removeItem(c.expiryValues.Top().(*Item))
+		}
+		for len(c.items) > c.maxItems {
+			lowestPriority := c.priorityValues.Top().(*Item).priority
+			lru := c.priorities[lowestPriority].Back()
+			c.removeItem(c.items[lru.Value.(string)])
+		}
+	}
+}
+
+func (c *PriorityExpiryCache) removeItem(item *Item) {
+	// complexity of list.Len() is O(1)
+	// https://golang.org/pkg/container/list/#List.Len
+
+	// O(e)
+	heap.Remove(c.expiryValues, *item.expiryHeapIndex)
+	c.priorities[item.priority].Remove(item.priorityListNode)
+
+	if c.priorities[item.priority].Len() == 0 {
+		// O(p)
+		heap.Remove(c.priorityValues, *item.priorityIndex)
+		delete(c.priorities, item.priority)
+	}
+
+	delete(c.items, item.key)
+}
+
+func printArr(arr []string) {
+	fmt.Print("[")
+	for _, e := range arr {
+		fmt.Printf(" \"%v\",", e)
+	}
+	fmt.Print(" ]\n")
 }
 
 // TODO(interviewee): writeup time/space complexity for each basic operation, describe and justify choices
 func main() {
 
-	expiryHeap := &ExpiryHeap{}
-	priorityHeap := &PriorityHeap{}
+	c := NewCache(5)
+	c.Set("A", 1, 5, time.Now().Add(time.Second*100))
+	c.Set("B", 2, 15, time.Now().Add(time.Second*3))
+	c.Set("C", 3, 5, time.Now().Add(time.Second*10))
+	c.Set("D", 4, 1, time.Now().Add(time.Second*15))
+	c.Set("E", 5, 5, time.Now().Add(time.Second*150))
+	c.Get("C")
 
-	i1 := &Item{
-		key:      "A",
-		value:    1,
-		priority: 6,
-		expire:   time.Now(),
-	}
+	// Current time = 0
+	c.SetMaxItems(5)
+	//c.Keys() = ["A", "B", "C", "D", "E"]
+	// space for 5 keys, all 5 items are included
+	printArr(c.Keys())
 
-	i2 := &Item{
-		key:      "B",
-		value:    2,
-		priority: 1,
-		expire:   time.Now(),
-	}
+	time.Sleep(5)
 
-	i3 := &Item{
-		key:      "C",
-		value:    3,
-		priority: 3,
-		expire:   time.Now(),
-	}
+	// Current time = 5
+	c.SetMaxItems(4)
+	//c.Keys() = ["A", "C", "D", "E"]
+	// "B" is removed because it is expired.  e3 < e5
+	printArr(c.Keys())
 
-	i4 := &Item{
-		key:      "C",
-		value:    3,
-		priority: 10,
-		expire:   time.Now(),
-	}
+	c.SetMaxItems(3)
+	//c.Keys() = ["A", "C", "E"]
+	// "D" is removed because it the lowest priority
+	// D's expire time is irrelevant.
+	printArr(c.Keys())
 
-	items := []*Item{i1, i2, i3, i4}
+	c.SetMaxItems(2)
+	//c.Keys() = ["C", "E"]
+	// "A" is removed because it is least recently used."
+	// A's expire time is irrelevant.
+	printArr(c.Keys())
 
-	for _, v := range items {
-		heap.Push(expiryHeap, v)
-		heap.Push(priorityHeap, v)
-	}
-
-	for _, v := range items {
-		fmt.Printf("expiry: %v, priority: %v\n", v.expiryHeapIndex, v.priorityIndex)
-	}
-
-	heap.Remove(priorityHeap, i1.priorityIndex)
-
-	for priorityHeap.Len() > 0 {
-		pri := heap.Pop(priorityHeap)
-		fmt.Printf("priority: %v\n", pri.(*Item).priority)
-	}
-
-	pec := NewCache(5)
-	pec.Set("A", 1, 5, time.Now())
-	pec.Set("B", 2, 15, time.Now())
-	pec.Set("C", 3, 5, time.Now())
-	pec.Set("D", 4, 1, time.Now())
-	pec.Set("E", 5, 5, time.Now())
-	pec.Get("C")
+	c.SetMaxItems(1)
+	//c.Keys() = ["C"]
+	// "E" is removed because C is more recently used (due to the Get("C") event).
+	printArr(c.Keys())
 }
