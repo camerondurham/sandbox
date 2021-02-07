@@ -1,11 +1,11 @@
 package main
 
 import (
-  "container/heap"
-  "container/list"
-  "fmt"
-  "time"
-  "sort"
+	"container/heap"
+	"container/list"
+	"fmt"
+	"sort"
+	"time"
 )
 
 /*
@@ -42,35 +42,35 @@ import (
 
 */
 type PriorityExpiryCache struct {
-  maxItems int
+	maxItems int
 
-  items map[string]*Item
+	items map[string]*Item
 
-  expiryValues *ExpiryHeap
+	expiryValues *ExpiryHeap
 
-  // map expiryTime -> index in ExpiryHeap
-  expiryIndexMap map[time.Time]*int
+	// map expiryTime -> index in ExpiryHeap
+	expiryIndexMap map[time.Time]*int
 
-  priorityValues *PriorityHeap
+	priorityValues *PriorityHeap
 
-  // map priority -> index in PriorityHeap
-  priorityIndexMap map[int]*int
+	// map priority -> index in PriorityHeap
+	priorityIndexMap map[int]*int
 
-  // priority -> doubly linked list of items in LRU order
-  priorityMap map[int]*list.List
+	// priority -> doubly linked list of items in LRU order
+	priorityMap map[int]*list.List
 }
 
 // Item should provide O(1) access to pointer in priorityMap
 type Item struct {
-  key      string
-  value    interface{}
-  priority int
-  expire   time.Time
+	key      string
+	value    interface{}
+	priority int
+	expire   time.Time
 
-  expiryHeapIndex *int
-  priorityIndex   *int
+	expiryHeapIndex *int
+	priorityIndex   *int
 
-  priorityListNode *list.Element
+	priorityListNode *list.Element
 }
 
 // BEGIN ExpiryHeap
@@ -89,31 +89,31 @@ type ExpiryHeap []*Item
 func (h ExpiryHeap) Len() int           { return len(h) }
 func (h ExpiryHeap) Less(i, j int) bool { return h[i].expire.Before(h[j].expire) }
 func (h ExpiryHeap) Swap(i, j int) {
-  h[i], h[j] = h[j], h[i]
-  *h[i].expiryHeapIndex = i
-  *h[j].expiryHeapIndex = j
+	h[i], h[j] = h[j], h[i]
+	*h[i].expiryHeapIndex = i
+	*h[j].expiryHeapIndex = j
 }
 
 func (h *ExpiryHeap) Push(x interface{}) {
-  // Push and Pop use pointer receivers because they modify the slice's length,
-  // not just its contents.
-  *h = append(*h, x.(*Item))
-  arr := *h
-  n := len(arr)
-  last := arr[n-1]
-  *last.expiryHeapIndex = n - 1
+	// Push and Pop use pointer receivers because they modify the slice's length,
+	// not just its contents.
+	*h = append(*h, x.(*Item))
+	arr := *h
+	n := len(arr)
+	last := arr[n-1]
+	*last.expiryHeapIndex = n - 1
 }
 
 func (h *ExpiryHeap) Pop() interface{} {
-  old := *h
-  n := len(old)
-  x := old[n-1]
-  *h = old[0 : n-1]
-  return x
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
 }
 
 func (h *ExpiryHeap) Top() interface{} {
-  return (*h)[0]
+	return (*h)[0]
 }
 
 // END ExpiryHeap
@@ -134,29 +134,29 @@ type PriorityHeap []*Item
 func (h PriorityHeap) Len() int           { return len(h) }
 func (h PriorityHeap) Less(i, j int) bool { return h[i].priority < h[j].priority }
 func (h PriorityHeap) Swap(i, j int) {
-  h[i], h[j] = h[j], h[i]
-  *h[i].priorityIndex = i
-  *h[j].priorityIndex = j
+	h[i], h[j] = h[j], h[i]
+	*h[i].priorityIndex = i
+	*h[j].priorityIndex = j
 }
 
 func (h *PriorityHeap) Push(x interface{}) {
-  *h = append(*h, x.(*Item))
-  arr := *h
-  n := len(arr)
-  last := arr[n-1]
-  *last.priorityIndex = n - 1
+	*h = append(*h, x.(*Item))
+	arr := *h
+	n := len(arr)
+	last := arr[n-1]
+	*last.priorityIndex = n - 1
 }
 
 func (h *PriorityHeap) Pop() interface{} {
-  old := *h
-  n := len(old)
-  x := old[n-1]
-  *h = old[0 : n-1]
-  return x
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
 }
 
 func (h *PriorityHeap) Top() interface{} {
-  return (*h)[0]
+	return (*h)[0]
 }
 
 // END PriorityHeap
@@ -164,15 +164,15 @@ func (h *PriorityHeap) Top() interface{} {
 // BEGIN PriorityExpiryCache
 
 func NewCache(maxItems int) *PriorityExpiryCache {
-  return &PriorityExpiryCache{
-    maxItems:         maxItems,
-    items:            make(map[string]*Item),
-    priorityMap:      make(map[int]*list.List),
-    priorityIndexMap: make(map[int]*int),
-    expiryIndexMap:   make(map[time.Time]*int),
-    expiryValues:     &ExpiryHeap{},
-    priorityValues:   &PriorityHeap{},
-  }
+	return &PriorityExpiryCache{
+		maxItems:         maxItems,
+		items:            make(map[string]*Item),
+		priorityMap:      make(map[int]*list.List),
+		priorityIndexMap: make(map[int]*int),
+		expiryIndexMap:   make(map[time.Time]*int),
+		expiryValues:     &ExpiryHeap{},
+		priorityValues:   &PriorityHeap{},
+	}
 }
 
 /*
@@ -184,21 +184,21 @@ Get(): O(1)
 */
 
 func (c *PriorityExpiryCache) Get(key string) interface{} {
-  if item, ok := c.items[key]; ok {
+	if item, ok := c.items[key]; ok {
 
-    // check if key is expired
-    if time.Now().After(item.expire) {
-      return nil
-    }
+		// check if key is expired
+		if time.Now().After(item.expire) {
+			return nil
+		}
 
-    // get key into the priorityMap map
-    // move item to tail of list
-    c.priorityMap[item.priority].MoveToFront(item.priorityListNode)
+		// get key into the priorityMap map
+		// move item to tail of list
+		c.priorityMap[item.priority].MoveToFront(item.priorityListNode)
 
-    return item
-  } else {
-    return nil
-  }
+		return item
+	} else {
+		return nil
+	}
 
 }
 
@@ -214,60 +214,60 @@ Set(): O(log(p) + log(e)), p = # unique priorities, e = # unique expiry times
     key is present: (log(p) + log(e)) + (log(p) + log(e)) = O(log(p) + log(e))
 
     key is not present: (log(p) + log(e)) = O(log(p) + log(e))
- */
+*/
 
 func (c *PriorityExpiryCache) Set(key string, value interface{}, priority int, expire time.Time) {
-  var priorityIndex *int
-  var expiryHeapIndex *int
+	var priorityIndex *int
+	var expiryHeapIndex *int
 
-  if ptr, ok := c.priorityIndexMap[priority]; ok {
-    priorityIndex = ptr
-  } else {
-    priorityIndex = new(int)
-  }
+	if ptr, ok := c.priorityIndexMap[priority]; ok {
+		priorityIndex = ptr
+	} else {
+		priorityIndex = new(int)
+	}
 
-  if ptr, ok := c.expiryIndexMap[expire]; ok {
-    expiryHeapIndex = ptr
-  } else {
-    expiryHeapIndex = new(int)
-  }
+	if ptr, ok := c.expiryIndexMap[expire]; ok {
+		expiryHeapIndex = ptr
+	} else {
+		expiryHeapIndex = new(int)
+	}
 
-  if old, ok := c.items[key]; ok {
-    c.removeItem(old)
-  }
+	if old, ok := c.items[key]; ok {
+		c.removeItem(old)
+	}
 
-  item := &Item{
-    key:             key,
-    value:           value,
-    priority:        priority,
-    expire:          expire,
-    priorityIndex:   priorityIndex,
-    expiryHeapIndex: expiryHeapIndex,
-  }
+	item := &Item{
+		key:             key,
+		value:           value,
+		priority:        priority,
+		expire:          expire,
+		priorityIndex:   priorityIndex,
+		expiryHeapIndex: expiryHeapIndex,
+	}
 
-  if dll, ok := c.priorityMap[priority]; ok {
-    node := dll.PushFront(key)
-    item.priorityListNode = node
-  } else {
-    ll := list.New()
-    node := ll.PushFront(key)
-    c.priorityMap[priority] = ll
-    item.priorityListNode = node
-  }
+	if dll, ok := c.priorityMap[priority]; ok {
+		node := dll.PushFront(key)
+		item.priorityListNode = node
+	} else {
+		ll := list.New()
+		node := ll.PushFront(key)
+		c.priorityMap[priority] = ll
+		item.priorityListNode = node
+	}
 
-  if _, ok := c.priorityIndexMap[priority]; !ok {
-    c.priorityIndexMap[priority] = priorityIndex
-    heap.Push(c.priorityValues, item)
-  }
+	if _, ok := c.priorityIndexMap[priority]; !ok {
+		c.priorityIndexMap[priority] = priorityIndex
+		heap.Push(c.priorityValues, item)
+	}
 
-  if _, ok := c.expiryIndexMap[expire]; !ok {
-    c.expiryIndexMap[expire] = expiryHeapIndex
-    heap.Push(c.expiryValues, item)
-  }
+	if _, ok := c.expiryIndexMap[expire]; !ok {
+		c.expiryIndexMap[expire] = expiryHeapIndex
+		heap.Push(c.expiryValues, item)
+	}
 
-  c.items[item.key] = item
+	c.items[item.key] = item
 
-  c.evictItems()
+	c.evictItems()
 }
 
 /*
@@ -276,9 +276,9 @@ SetMaxItems(): see evictItems()
 
 */
 func (c *PriorityExpiryCache) SetMaxItems(maxItems int) {
-  c.maxItems = maxItems
+	c.maxItems = maxItems
 
-  c.evictItems()
+	c.evictItems()
 }
 
 /*
@@ -296,23 +296,22 @@ evictItems(): O( d * (log(p) + log(e)), d = difference between # items and maxIt
 
 */
 
-
 // evictItems will evict items from the cache to make room for new ones.
 func (c *PriorityExpiryCache) evictItems() {
-  // log(p) + log(e); p=# distinct priorityMap, e=# distinct expiryTimes
+	// log(p) + log(e); p=# distinct priorityMap, e=# distinct expiryTimes
 
-  if c.maxItems < len(c.items) {
-    // check if there are expired entries to evict
-    for time.Now().After(c.expiryValues.Top().(*Item).expire) &&
-      len(c.items) > c.maxItems {
-      c.removeItem(c.expiryValues.Top().(*Item))
-    }
-    for len(c.items) > c.maxItems {
-      lowestPriority := c.priorityValues.Top().(*Item).priority
-      lru := c.priorityMap[lowestPriority].Back()
-      c.removeItem(c.items[lru.Value.(string)])
-    }
-  }
+	if c.maxItems < len(c.items) {
+		// check if there are expired entries to evict
+		for time.Now().After(c.expiryValues.Top().(*Item).expire) &&
+			len(c.items) > c.maxItems {
+			c.removeItem(c.expiryValues.Top().(*Item))
+		}
+		for len(c.items) > c.maxItems {
+			lowestPriority := c.priorityValues.Top().(*Item).priority
+			lru := c.priorityMap[lowestPriority].Back()
+			c.removeItem(c.items[lru.Value.(string)])
+		}
+	}
 }
 
 /*
@@ -333,196 +332,194 @@ removeItem(): O(log(p) + log(e)), p = # unique priorities, e = # unique expiry t
     non-unique priority:
       1 * (log(p) + log(e)) = O(log(p) + log(e))
 
- */
+*/
 
 func (c *PriorityExpiryCache) removeItem(item *Item) {
 
-  // O(log(e)), e = # unique expiry values
-  heap.Remove(c.expiryValues, *item.expiryHeapIndex)
-  delete(c.expiryIndexMap, item.expire)
+	// O(log(e)), e = # unique expiry values
+	heap.Remove(c.expiryValues, *item.expiryHeapIndex)
+	delete(c.expiryIndexMap, item.expire)
 
-  c.priorityMap[item.priority].Remove(item.priorityListNode)
+	c.priorityMap[item.priority].Remove(item.priorityListNode)
 
-  // complexity of list.Len() is O(1)
-  // https://golang.org/pkg/container/list/#List.Len
-  if c.priorityMap[item.priority].Len() == 0 {
-    // O(log(p)), p = # unique priority values
-    heap.Remove(c.priorityValues, *item.priorityIndex)
-    delete(c.priorityIndexMap, item.priority)
-    delete(c.priorityMap, item.priority)
-  }
+	// complexity of list.Len() is O(1)
+	// https://golang.org/pkg/container/list/#List.Len
+	if c.priorityMap[item.priority].Len() == 0 {
+		// O(log(p)), p = # unique priority values
+		heap.Remove(c.priorityValues, *item.priorityIndex)
+		delete(c.priorityIndexMap, item.priority)
+		delete(c.priorityMap, item.priority)
+	}
 
-  delete(c.items, item.key)
+	delete(c.items, item.key)
 }
 
 // Keys() is used for testing
 func (c *PriorityExpiryCache) Keys() []string {
-  keys := make([]string, 0)
-  for k, _ := range c.items {
-    keys = append(keys, k)
-  }
-  return keys
+	keys := make([]string, 0)
+	for k, _ := range c.items {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // END PriorityExpiryCache
 
 func printArr(arr []string) {
-  fmt.Print("[")
-  for _, e := range arr {
-    fmt.Printf(" \"%v\",", e)
-  }
-  fmt.Print(" ]\n")
+	fmt.Print("[")
+	for _, e := range arr {
+		fmt.Printf(" \"%v\",", e)
+	}
+	fmt.Print(" ]\n")
 }
 
 func assertEqual(actual []string, expected []string) {
-  if len(actual) != len(expected) {
-    panic("wrong size")
-  }
-  sort.Strings(actual)
-  sort.Strings(expected)
-  for i := 0; i < len(expected); i++ {
-    if actual[i] != expected[i] {
-      panic(fmt.Sprintf("Expected [%v]=%v, Actual [%v]=%v",i, expected[i], i, actual[i]))
-    }
-  }
+	if len(actual) != len(expected) {
+		panic("wrong size")
+	}
+	sort.Strings(actual)
+	sort.Strings(expected)
+	for i := 0; i < len(expected); i++ {
+		if actual[i] != expected[i] {
+			panic(fmt.Sprintf("Expected [%v]=%v, Actual [%v]=%v", i, expected[i], i, actual[i]))
+		}
+	}
 }
 
 // TODO(interviewee): writeup time/space complexity for each basic operation, describe and justify choices
 func main() {
 
-  // Original test
-  c := NewCache(5)
-  c.Set("A", 1, 5, time.Now().Add(time.Second*100))
-  c.Set("B", 2, 15, time.Now().Add(time.Second*3))
-  c.Set("C", 3, 5, time.Now().Add(time.Second*10))
-  c.Set("D", 4, 1, time.Now().Add(time.Second*15))
-  c.Set("E", 5, 5, time.Now().Add(time.Second*150))
-  c.Get("C")
+	// Original test
+	c := NewCache(5)
+	c.Set("A", 1, 5, time.Now().Add(time.Second*100))
+	c.Set("B", 2, 15, time.Now().Add(time.Second*3))
+	c.Set("C", 3, 5, time.Now().Add(time.Second*10))
+	c.Set("D", 4, 1, time.Now().Add(time.Second*15))
+	c.Set("E", 5, 5, time.Now().Add(time.Second*150))
+	c.Get("C")
 
-  c.SetMaxItems(5)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A", "B", "C", "D", "E"})
+	c.SetMaxItems(5)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "B", "C", "D", "E"})
 
-  time.Sleep(5 * time.Second)
+	time.Sleep(5 * time.Second)
 
-  c.SetMaxItems(4)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A", "C", "D", "E"})
+	c.SetMaxItems(4)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "C", "D", "E"})
 
-  c.SetMaxItems(3)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A", "C", "E"})
+	c.SetMaxItems(3)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "C", "E"})
 
-  c.SetMaxItems(2)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"C","E"})
+	c.SetMaxItems(2)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"C", "E"})
 
-  c.SetMaxItems(1)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"C"})
+	c.SetMaxItems(1)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"C"})
 
+	// Test expiry
 
-  // Test expiry
-  
-  c = NewCache(4)
-  c.Set("A", 1, 5, time.Now().Add(time.Second*1))
-  c.Set("B", 2, 15, time.Now().Add(time.Second*2))
-  c.Set("C", 3, 5, time.Now().Add(time.Second*3))
-  c.Set("D", 4, 1, time.Now().Add(time.Second*4))
-  
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A","B","C","D"})
-  time.Sleep(1*time.Second)
-  
-  c.SetMaxItems(3)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"B","C","D"})
-  time.Sleep(1*time.Second)
-  
-  c.SetMaxItems(2)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"C","D"})
-  time.Sleep(1*time.Second)
-  
-  c.SetMaxItems(1)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"D"})
-  
-  // Test priority
-  
-  c = NewCache(4)
-  c.Set("A", 1, 1, time.Now().Add(time.Second*1))
-  c.Set("B", 2, 2, time.Now().Add(time.Second*2))
-  c.Set("C", 3, 3, time.Now().Add(time.Second*3))
-  c.Set("D", 4, 4, time.Now().Add(time.Second*4))
-  
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A","B","C","D"})
-  
-  c.SetMaxItems(3)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"B","C","D"})
-  
-  c.SetMaxItems(2)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"C","D"})
-  
-  c.SetMaxItems(1)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"D"})
-  
-  // Test LRU
-  
-  c = NewCache(4)
-  c.Set("D", 4, 1, time.Now().Add(time.Second*4))
-  c.Set("C", 3, 1, time.Now().Add(time.Second*3))
-  c.Set("B", 2, 1, time.Now().Add(time.Second*2))
-  c.Set("A", 1, 1, time.Now().Add(time.Second*1))
-  c.Get("B")
-  c.Get("C")
-  c.Get("A")
-  c.Get("D")
-  
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A","B","C","D"})
-  
-  c.SetMaxItems(3)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A","C","D"})
-  
-  c.SetMaxItems(2)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A","D"})
-  
-  c.SetMaxItems(1)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"D"})
+	c = NewCache(4)
+	c.Set("A", 1, 5, time.Now().Add(time.Second*1))
+	c.Set("B", 2, 15, time.Now().Add(time.Second*2))
+	c.Set("C", 3, 5, time.Now().Add(time.Second*3))
+	c.Set("D", 4, 1, time.Now().Add(time.Second*4))
 
-  
-  // Test re-insert
-  c = NewCache(4)
-  c.Set("D", 4, 1, time.Now().Add(time.Second*1))
-  c.Set("C", 3, 1, time.Now().Add(time.Second*5))
-  c.Set("B", 2, 1, time.Now().Add(time.Second*5))
-  c.Set("A", 1, 1, time.Now().Add(time.Second*5))
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "B", "C", "D"})
+	time.Sleep(1 * time.Second)
 
-  c.Set("D", 4, 4, time.Now().Add(time.Second*5))
-  time.Sleep(1 * time.Second)
+	c.SetMaxItems(3)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"B", "C", "D"})
+	time.Sleep(1 * time.Second)
 
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A","B","C","D"})
-  
-  c.SetMaxItems(3)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A","B","D"})
-  
-  c.SetMaxItems(2)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"A","D"})
-  
-  c.SetMaxItems(1)
-  printArr(c.Keys())
-  assertEqual(c.Keys(), []string{"D"})
+	c.SetMaxItems(2)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"C", "D"})
+	time.Sleep(1 * time.Second)
+
+	c.SetMaxItems(1)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"D"})
+
+	// Test priority
+
+	c = NewCache(4)
+	c.Set("A", 1, 1, time.Now().Add(time.Second*1))
+	c.Set("B", 2, 2, time.Now().Add(time.Second*2))
+	c.Set("C", 3, 3, time.Now().Add(time.Second*3))
+	c.Set("D", 4, 4, time.Now().Add(time.Second*4))
+
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "B", "C", "D"})
+
+	c.SetMaxItems(3)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"B", "C", "D"})
+
+	c.SetMaxItems(2)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"C", "D"})
+
+	c.SetMaxItems(1)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"D"})
+
+	// Test LRU
+
+	c = NewCache(4)
+	c.Set("D", 4, 1, time.Now().Add(time.Second*4))
+	c.Set("C", 3, 1, time.Now().Add(time.Second*3))
+	c.Set("B", 2, 1, time.Now().Add(time.Second*2))
+	c.Set("A", 1, 1, time.Now().Add(time.Second*1))
+	c.Get("B")
+	c.Get("C")
+	c.Get("A")
+	c.Get("D")
+
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "B", "C", "D"})
+
+	c.SetMaxItems(3)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "C", "D"})
+
+	c.SetMaxItems(2)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "D"})
+
+	c.SetMaxItems(1)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"D"})
+
+	// Test re-insert
+	c = NewCache(4)
+	c.Set("D", 4, 1, time.Now().Add(time.Second*1))
+	c.Set("C", 3, 1, time.Now().Add(time.Second*5))
+	c.Set("B", 2, 1, time.Now().Add(time.Second*6))
+	c.Set("A", 1, 1, time.Now().Add(time.Second*7))
+
+	c.Set("D", 4, 4, time.Now().Add(time.Second*8))
+	time.Sleep(1 * time.Second)
+
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "B", "C", "D"})
+
+	c.SetMaxItems(3)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "B", "D"})
+
+	c.SetMaxItems(2)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"A", "D"})
+
+	c.SetMaxItems(1)
+	printArr(c.Keys())
+	assertEqual(c.Keys(), []string{"D"})
 }
 
 /*
