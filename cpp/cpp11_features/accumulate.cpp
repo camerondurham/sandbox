@@ -11,7 +11,7 @@ int main() {
 
   std::cout << "Total is: " << n << '\n';
 
-  std::string s = std::accumulate(v.begin(), v.end(), std::string{}, [](std::string strOuter, const std::vector<int>& vec) {
+  std::string s = std::accumulate(v.begin(), v.end(), static_cast<std::string>(""), [](std::string strOuter, const std::vector<int>& vec) {
     std::string line = std::accumulate(std::next(vec.begin()), vec.end(), std::to_string(vec[0]), [](std::string strInner, int i){
       return std::move(strInner) + ',' + std::to_string(i);
     });
