@@ -2,6 +2,7 @@
 #include<iostream>
 #include<numeric>
 #include<string>
+#include<vector>
 int main() {
   std::vector<std::vector<int>> v{{1,2,3},{4,5,6},{7,8,9}};
   int n = std::accumulate(v.begin(), v.end(), 0, [](int nn, std::vector<int> vec){

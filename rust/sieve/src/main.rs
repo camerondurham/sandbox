@@ -3,11 +3,11 @@ use std::io;
  *  little sieve program check if a number is prime!
  */
 const SIEVE_MIN: usize = 1;
-const SIEVE_MAX: usize = 10_000;
+const SIEVE_MAX: usize = 1_000_000;
 fn main() {
     let mut sieve = [true; SIEVE_MAX];
 
-    for i in 2..100 {
+    for i in 2..1000 {
         if sieve[i] {
             let mut j = i * i;
             while j < SIEVE_MAX {
