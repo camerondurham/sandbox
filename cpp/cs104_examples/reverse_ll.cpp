@@ -15,6 +15,7 @@ Node* reverse (Node* head) {
 	head->next->next = head;
 	head->next = NULL;
   /*
+    Some notes:
     1 -> 3 -> 5
     rest = reverse(3->5)
                 rest = reverse(5)
@@ -27,11 +28,6 @@ Node* reverse (Node* head) {
       1 -> NULL
 
     5 -> 3 -> 1 -> NULL
-
-
-
-
-
   */
 	return rest;
 }

@@ -1,3 +1,7 @@
+#include<cstring>
+#include<utility>
+#include<iostream>
+
 class string
 {
  size_t mSize;
@@ -105,3 +109,16 @@ public:
   return temp;
  }
 };
+
+int main(int argc, char** argv)
+{
+  string x("abc");
+  string y("def");
+  x += y; // first runs operator+ then copy constructor
+  string z = x + y; // operator+ then copy constructor, then destructor happens from operator +
+
+
+  // string z;
+  // z = x + y; would be assignment, but the prev line is copy constructor
+
+}
