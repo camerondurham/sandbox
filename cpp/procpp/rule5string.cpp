@@ -106,7 +106,7 @@ public:
  {
   string temp(lhs);
   temp += rhs;
-  return temp;
+  return temp; // this is an expiring value
  }
 };
 

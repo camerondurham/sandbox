@@ -6,7 +6,7 @@ class Question {
 public:
   Question(int v) : val(v) { }
   virtual ~Question() { cout << "d1" << endl; }
-  virtual string studentResponse() = 0;
+  virtual string studentResponse() {return "I'm not virtual"; };
   int getValue() { return val; }
 private:
   int val;
