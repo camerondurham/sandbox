@@ -62,6 +62,7 @@ private:
 struct ControlBlock
 {
   unsigned mStrongRefs = 0;
+  unsigned mWeakRefs = 0;
 };
 
 
@@ -78,6 +79,12 @@ public:
     mBlock->mStrongRefs = 1;
   }
 
+  friend template <typename U> class WeakPtr;
+  SharedPtr(const WeakPtr<T>& weak)
+  {
+
+  }
+
   ~SharedPtr()
   {
     mBlock->mStrongRefs--;
@@ -85,7 +92,11 @@ public:
     if(mBlock->mStrongRefs == 0)
     {
       delete mData;
-      delete mBlock;
+      // TODO: implement weak reference count
+      if(mBlock->mWeakRefs == 0)
+      {
+        delete mBlock;
+      }
     }
   }
 
@@ -127,10 +138,36 @@ public:
     return mData;
   }
 
+
 private:
   T* mData;
   ControlBlock* mBlock;
 };
+
+template <typename T>
+class WeakPtr
+{
+public:
+  WeakPtr(const SharedPtr<T>& shared)
+    :mData(shared.mData)
+    ,mBlock(shared.mBlock)
+  {
+    mBlock->mWeakRefs++;
+  }
+  ~WeakPtr()
+  {
+    mBlock->mWeakRefs--;
+    if(mBlock->mStrongRefs == 0 && mBlock->mWeakRefs == 0)
+    {
+      delete mBlock;
+    }
+  }
+
+private:
+  T* mData;
+  ControlBlock* mBlock;
+};
+
 
 // don't want to allow copy of this
 // this function will copy a pointer and crash bc of a double free
