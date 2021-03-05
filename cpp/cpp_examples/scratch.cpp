@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include<memory>
 #include<iostream>
 
@@ -43,8 +44,7 @@ void Tree::inOrderTraversal(std::shared_ptr<Node> node) {
         inOrderTraversal(node->right);
     }
 }
-
-int main(int argc, char** argv)
+int main()
 {
 
 }
