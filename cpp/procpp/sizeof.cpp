@@ -2,7 +2,7 @@
 class c {
 	int i;
 	char c;
-	virtual void f();
+	virtual void f(){}
 };
 int main()
 {
