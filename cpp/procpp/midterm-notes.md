@@ -138,12 +138,18 @@ double d
 
 (vtable for Y)
 
+no "default" constructor for structs? no, dumb point bc constructors
+can't be virtual.
+
 ```
 [0] Y::b
 [1] Y::~Y
 ```
 
 4.4
+
+After adding (in order) any modifications from parent's class,
+add new virtual functions from child class.
 
 ```
 [0] Z::b
