@@ -402,6 +402,18 @@ int main() {
 ```
 
 
+When do move semantics do you no good?
+
+* No move operations: The object to be moved from fails to offer move
+  operations. The move request therefore becomes a copy request.
+* Move not faster: The object to be moved from has move operations that are no
+  faster than its copy operations.
+* Move not usable: The context in which the moving would take place requires a
+  move operation that emits no exceptions, but that operation isn’t declared
+  noexcept.
+* Source object is an `lvalue`, with a few exceptions
+
+
 ### xvalue and `std::move`
 
 `std::move` returns an xvalue. An `xvalue` is an expression that identifies an
@@ -435,3 +447,166 @@ for (int i = 0; i < 1000; i+=4)
         myArray[i + 2] + myArray[i + 3];
 }
 ```
+
+## Rule of Five
+
+If you're compelled to implement any of the following, implement all of these:
+
+* Destructor
+* Copy Constructor
+* Assignment Operator
+* Move Constructor
+* Move Assignment Operator
+
+
+**Rule of zero** in modern c++ says you shouldn't have to overload any of the five member functions!
+
+Avoid using `new` altogether and instead use
+* STL collections
+* Smart pointers
+
+### String Example
+
+#### const char\* constructor
+
+```cpp
+
+ // Construct from const char*
+ string(const char* str)
+  :mSize(std::strlen(str))
+  ,mCapacity(mSize < 20 ? 20 : mSize + 1)
+  ,mData(new char[mCapacity])
+ {
+  memcpy(mData, str, mSize + 1);
+ }
+
+```
+
+#### copy constructor
+
+
+```cpp
+ // Copy constructor
+ string(const string& rhs)
+  :mSize(rhs.mSize)
+  ,mCapacity(rhs.mCapacity)
+  ,mData(new char[mCapacity])
+ {
+  memcpy(mData, rhs.mData, mSize + 1);
+ }
+```
+
+#### assignment operator
+
+```cpp
+ // Assignment operator
+ string& operator=(const string& rhs)
+ {
+  // Don't do anything for self-assignment
+  if (this != &rhs)
+  {
+   // Delete existing dynamically allocated data
+   delete[] mData;
+
+   // Deep copy
+   mSize = rhs.mSize;
+   mCapacity = rhs.mCapacity;
+   mData = new char[mCapacity];
+   memcpy(mData, rhs.mData, mSize + 1);
+  }
+  // Always return *this
+  return *this;
+ }
+```
+
+#### destructor
+
+
+```cpp
+ // Destructor
+ ~string()
+ {
+  delete[] mData;
+  mSize = 0;
+  mCapacity = 0;
+ }
+```
+
+#### move constructor
+
+```cpp
+ string(string&& rhs) noexcept
+  :mSize(std::move(rhs.mSize))
+  ,mCapacity(std::move(rhs.mCapacity))
+  ,mData(std::move(rhs.mData))
+ {
+  // Set rhs data to null so not deleted from under us
+  rhs.mData = nullptr;
+  rhs.mSize = 0;
+  rhs.mCapacity = 0;
+ }
+```
+
+#### move assignment operator
+
+```cpp
+
+ // Move Assignment operator
+ string& operator=(string&& rhs) noexcept
+ {
+  // Don't do anything for self-assignment
+  if (this != &rhs)
+  {
+   // Delete existing dynamically allocated data
+   delete[] mData;
+
+   // Shallow copy
+   mSize = std::move(rhs.mSize);
+   mCapacity = std::move(rhs.mCapacity);
+   mData = std::move(rhs.mData);
+
+   // Set rhs data to null so not deleted from under us
+   rhs.mData = nullptr;
+   rhs.mSize = 0;
+   rhs.mCapacity = 0;
+  }
+  // Always return *this
+  return *this;
+ }
+```
+#### plus equals operator (not R5)
+
+```cpp
+
+ string& operator+=(const string& rhs)
+ {
+  // Check if there's enough space and if not, grow
+  // (omitted)
+  // ...
+
+  for (size_t i = 0; i < rhs.mSize + 1; i++)
+  {
+   mData[mSize + i] = rhs.mData[i];
+  }
+  mSize += rhs.mSize;
+  return *this;
+ }
+
+```
+
+#### plus operator
+
+```cpp
+
+ friend string operator+(const string& lhs, const string& rhs)
+ {
+  string temp(lhs);
+  temp += rhs;
+  return temp; // this is an expiring value
+ }
+};
+```
+
+
+## Functional Programming
+

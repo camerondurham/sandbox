@@ -1,3 +1,5 @@
+#include<cstring>
+
 class String {
 public:
  String(const char* str)
