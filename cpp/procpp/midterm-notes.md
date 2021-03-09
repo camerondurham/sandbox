@@ -774,3 +774,137 @@ std::vector<float> divEachBy(const std::vector<float> &v,
   return ret;
 }
 ```
+
+
+**generate** example
+
+
+```cpp
+std::vector<std::pair<int,int>> GeneratePairs(std::mt19937& generator, const std::vector<double>& probabilities)
+{
+    std::vector<std::pair<int,int>> ret(probabilities.size());
+    std::generate(ret.begin(), ret.end(), [&probabilities, &generator](){
+        std::uniform_real_distribution<double> dist;
+        double randomA = dist(generator);
+        double randomB = dist(generator);
+        int parentA = SelectParent(probabilities, randomA);
+        int parentB = SelectParent(probabilities, randomB);
+        return std::make_pair(parentA, parentB);
+    });
+    return ret;
+}
+
+```
+
+## Parallel Examples
+
+`tbb::parallel_for`
+
+```cpp
+std::vector<std::string> v; // Assume has stuff
+tbb::parallel_for(tbb::blocked_range<size_t>(0, v.size()),
+    [&v](const tbb::blocked_range<size_t>& r) {
+    // Make temporary once per range :)
+    std::string tempStr;
+    // Iterate over range
+    for (size_t i = r.begin(); i != r.end(); ++i) {
+      // Do somethign with v[i]
+    }
+});
+```
+
+`tbb::parallel_invoke`
+
+```cpp
+tbb::parallel_invoke(
+  [this] { BruteForceHelper(unsolvedPass, 0, 3); },
+  [this] { BruteForceHelper(unsolvedPass, 4, 7); },
+  [this] { BruteForceHelper(unsolvedPass, 8, 11); },
+  [this] { BruteForceHelper(unsolvedPass, 12, 15); },
+  [this] { BruteForceHelper(unsolvedPass, 16, 19); },
+  [this] { BruteForceHelper(unsolvedPass, 20, 23); },
+  [this] { BruteForceHelper(unsolvedPass, 24, 27); },
+  [this] { BruteForceHelper(unsolvedPass, 28, 31); },
+  [this] { BruteForceHelper(unsolvedPass, 32, 35); }
+);
+```
+
+
+### STL Collections for Parallel Programming
+
+* assume adding/removing elements from an STL collection **is unsafe in a parallel operator**
+* reading specific elements as long as nobody is adding/removing should be ok
+* writing to specific elements **may** be okay but depends how it's being done
+
+## Smart Pointers
+
+`std::unique_ptr`
+
+* A pointer that allows only a single reference at a time
+* uniquely controls object's lifetime
+* when pointer goes out of scope, object is deleted
+* create with `std::make_unique`
+
+
+`std::shared_ptr`
+
+* Allows multiple references at once
+* used when an object has shared ownership between multiple pointers
+* uses **reference counting** to track number of references there are to the dynamically allocated object
+* automatically deallocated when ref count == 0
+* create with `std::make_shared`
+
+
+`std::weak_ptr`
+
+* Allows for weak references to shared pointers
+* allows a pointer to keep a weak reference to a shared pointer
+* a **weak reference** does NOT affect the lifetime of the object because if uses a separate count
+* used to peek at the lifetime of an object (if expired or not)
+
+
+## Writing to Binary Files
+
+
+```cpp
+void RleFile::CreateArchive(const std::string& source)
+{
+	// TODO
+	std::ifstream::pos_type size;
+	char* memblock;
+	// Open the file for input, in binary mode, and start ATE (at the end)
+	std::ifstream file(source, std::ios::in | std::ios::binary | std::ios::ate);
+	if (file.is_open())
+	{
+		size = file.tellg(); // Save the size of the file
+		memblock = new char[static_cast<unsigned int>(size)];
+		file.seekg(0, std::ios::beg); // Seek back to start of file
+		file.read(memblock, size);
+		file.close();
+		// File data is now in memblock array
+
+		mRleData.Compress(memblock, static_cast<unsigned int>(size));
+
+		delete[] memblock;
+	}
+
+	std::string filename(source + ".rl1");
+
+	// Open the file for output, in binary mode, and overwrite an existing file
+	std::ofstream arc(filename, std::ios::out | std::ios::binary | std::ios::trunc);
+	if (arc.is_open())
+	{
+		mHeader.mFileName = source;
+		mHeader.mFileNameLength = source.size();
+		mHeader.mFileSize = size;
+
+		arc.write(mHeader.mSig, 4);
+		arc.write(reinterpret_cast<char*>(&(mHeader.mFileSize)), 4);
+		arc.write(reinterpret_cast<char*>(&(mHeader.mFileNameLength)), 1);
+		arc.write(mHeader.mFileName.c_str(), mHeader.mFileName.size());
+		arc.write(mRleData.mData, mRleData.mSize);
+	}
+
+
+}
+```
