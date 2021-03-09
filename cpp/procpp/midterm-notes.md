@@ -609,3 +609,143 @@ Avoid using `new` altogether and instead use
 ```
 
 ## Functional Programming
+
+
+### Lambda Expression Syntax
+
+```cpp
+// [] <- capture clause
+// () <- function parameters
+// -> <- return value (optional)
+// { ... } <- body
+[&count](int i) -> int
+{
+  std::cout << i << std::endl;
+  count++;
+  return count;
+}
+```
+
+Capture clause:
+
+```cpp
+// Capture ALL local variables by value (not recommended)
+[=]
+
+// Capture ALL local variables by reference (not recommended)
+[&]
+
+// Capture x by value and y by reference
+[x, &y]
+
+// Capture count by reference, and all other locals by value
+[=, &count]
+
+// Capture this by value (can't be captured by reference)
+// If you want to use any member functions or variables in the
+// lambda, you have to capture this.
+[this]
+```
+
+Specifying the type of a lambda with `std::function` template in `<functional>` header:
+
+```cpp
+std::function<bool(int,int)> greater =
+  [](int a, int b) {
+    return a > b;
+  };
+```
+
+### Functional Programming Paradigm
+
+* in functional programming, functions are first-class citizens
+* functions can
+  * be passed as args to other functions
+  * can be returned from other functions
+  * can be assigned to a variable or stored in a container
+
+* higher order functions (functions that can accept other functions as args) are allowed
+* common higher order functions
+  * `map` - apply a function to each element in the collection, storing result in another collection
+  * `filter` - remove elements from a collection based on a filtering function
+  * `reduce` - reduce a collection to a single value by applying a binary operation repeatedly
+* function programming tries to limit **side effects** (having any interaction with the world "outside" from the instance function call)
+
+
+**Reduce example**
+
+Take a collection and reduce it to a single value by applying a binary operator repeatedly.
+
+Reduce collection to the sum of its components.
+
+Example:
+
+```cpp
+#include<numeric>
+float sumVector(const std::vector<float>& v) {
+  // std::accumulate works as a REDUCE
+  return std::accumulate(v.begin(),
+  v.end(),
+  0.0f, // initial value
+  // binary lambda expression
+  [](const float& a, const float& b) {
+    return a + b;
+  });
+}
+```
+
+**all_of** example
+
+```cpp
+std::vector<int> v1{ 2, 4, 6, 8, 10 };
+if (std::all_of(v1.begin(), v1.end(), [](const int& i) {
+  return (i % 2) == 0;
+}))
+{
+  std::cout << "All are even!" << std::endl;
+}
+else
+{
+  std::cout << "All aren't even" << std::endl;
+}
+```
+**copy_n** example
+
+* copies n elements from a source collection into a back_inserted collection
+
+**copy_if** another example
+
+```cpp
+std::vector<int> from{ 1, 2, 3, 4, 5 };
+
+std::vector<int> to;
+
+auto is_odd = [](const int& i) { return i % 2 == 1 };
+
+// Copy from the "from" container into the "to" container,
+// only if is_odd returns true for that element
+std::copy_if(from.begin(), from.end(),
+  std::back_inserter(to), is_odd);
+```
+
+**map** example (C++ `std::transform`)
+
+* map higher order function applies a function to each element and saves results in a different collection
+
+```cpp
+
+std::vector<float> divEachBy(const std::vector<float> &v,
+                             float denominator)
+{
+  std::vector<float> ret;
+  // std::transform can be used to map
+  std::transform(v.begin(),								// Start of range
+                 v.end(),									// End of range
+                 std::back_inserter(ret), // Collection to insert into
+                 // Unary Function that returns transform value
+                 [denominator](const float &a) {
+                   return a / denominator;
+                 });
+  return ret;
+}
+```
