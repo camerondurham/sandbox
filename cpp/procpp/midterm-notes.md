@@ -138,8 +138,8 @@ double d
 
 (vtable for Y)
 
-no "default" constructor for structs? no, dumb point bc constructors
-can't be virtual.
+no "default" constructor for structs?
+no, dumb point bc constructors can't be virtual.
 
 ```
 [0] Y::b
@@ -452,6 +452,26 @@ for (int i = 0; i < 1000; i+=4)
 {
   sum += myArray[i] + myArray[i + 1] +
         myArray[i + 2] + myArray[i + 3];
+}
+```
+
+### Sanjay Split
+
+Don't trust Stack Overflow and don't use `std::stringstream`!
+
+```cpp
+std::vector<std::string> SplitSanjay(const std::string& str) {
+  const char delim = ',';
+  std::vector<std::string> retVal;
+  size_t start = 0;
+  size_t delimLoc = str.find_first_of(delim, start);
+  while (delimLoc != std::string::npos) {
+    retVal.emplace_back(str.substr(start, delimLoc - start));
+    start = delimLoc + 1;
+    delimLoc = str.find_first_of(delim, start);
+  }
+  retVal.emplace_back(str.substr(start));
+  return retVal;
 }
 ```
 
