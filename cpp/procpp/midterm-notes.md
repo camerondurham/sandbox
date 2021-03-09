@@ -176,15 +176,15 @@ Any two of these:
 - Use operator += instead of operator+
 - Declare Str outside of the loop so it's not constructed on every iteration
 
-  6.2
-  If the string is below a "small" size which may be around 20 bytes, then it's possible to save the string in memory without using dynamic allocation, which makes it faster.
+6.2
+If the string is below a "small" size which may be around 20 bytes, then it's possible to save the string in memory without using dynamic allocation, which makes it faster.
 
-  6.3
-  Inline functions don't have the overhead of actually calling a function because effectively the code is copy/pasted everywhere the inlined "function" is "called"
+6.3
+Inline functions don't have the overhead of actually calling a function because effectively the code is copy/pasted everywhere the inlined "function" is "called"
 
-  7.1
+7.1
 
-```
+```cpp
 vector<double> result;
 // Use default operator for adj_difference
 std::adjacent_difference(input.begin(), input.end(),
@@ -199,7 +199,7 @@ return result;
 7.2
 (the signature should return a vector of int, DailyResult pairs)
 
-```
+```cpp
 vector<pair<int, DailyResult>> result;
 
 int day = -1;
@@ -215,7 +215,7 @@ return result;
 
 7.3
 
-```
+```cpp
 vector<pair<int, DailyResult>> part1;
 std::copy_if(input.begin(), input.end(), std::back_inserter(part1),
  [](const pair<int, DailyResult>& p) {
@@ -232,7 +232,7 @@ return result;
 
 8
 
-```
+```cpp
 bool success = false;
 std::ifstream::pos_type size;
 char* memblock = nullptr;
@@ -255,8 +255,7 @@ if (file.is_open())
   {
    size_t startAddr = 12 + i * sizeof(Chunk);
    Chunk chunk;
-   chunk.ID = *(reinterpret_cast<unsigned int*>
-       (&memblock[startAddr]));
+   chunk.ID = *(reinterpret_cast<unsigned int*>(&memblock[startAddr]));
    std::memcpy(chunk.Samples, memblock + startAddr + 4, 1024);
    Chunks.emplace_back(chunk);
   }
