@@ -78,18 +78,18 @@ private:
 
 int main(int argc, char** argv)
 {
-  std::vector<Student> students{
-    {"Mary", "Smith"},
-    {"John", "Doe"},
-    {"James", "Miller"}
-  };
+	std::vector<Student> students{
+		{"Mary", "Smith"},
+		{"John", "Doe"},
+		{"James", "Miller"}
+	};
 
 	std::vector<int> randomNums(50, -1);
 	std::generate(randomNums.begin(), randomNums.end(), [](){
 		return std::rand();
 	});
 
-  std::vector<int> numbers{5,-5,20,35,17};
+	std::vector<int> numbers{5,-5,20,35,17};
 
 	int Count = 0;
 	std::string Name;
@@ -106,8 +106,8 @@ int main(int argc, char** argv)
 				}
 	};
 
-  // std::sort(numbers.begin(), numbers.end(), std::greater<int>());
-  std::sort(students.begin(), students.end(), myLambda);
+	// std::sort(numbers.begin(), numbers.end(), std::greater<int>());
+	std::sort(students.begin(), students.end(), myLambda);
 
 	Event e;
 	int Count2 = 0;
@@ -127,10 +127,10 @@ int main(int argc, char** argv)
 	e.Trigger();
 
 
-  // if (LessThan(a,b)) then swap
-  // LessThan is a "binary predicate"
-  // predicate -> returns true or false
-  // binary -> takes in two parameters
+	// if (LessThan(a,b)) then swap
+	// LessThan is a "binary predicate"
+	// predicate -> returns true or false
+	// binary -> takes in two parameters
 
 	for(const auto& s : students)
 	{
@@ -178,5 +178,5 @@ int main(int argc, char** argv)
 		std::cout << "\n";
 	}
 
-  return 0;
+	return 0;
 }
