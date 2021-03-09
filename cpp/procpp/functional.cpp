@@ -1,21 +1,21 @@
-#include<functional>
-#include<numeric>
-#include<vector>
-#include<iostream>
+#include <functional>
+#include <numeric>
+#include <vector>
+#include <iostream>
 
-using std::vector;
 using std::cout;
+using std::vector;
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 	vector<int> v({1, 2, 3, 4});
 	vector<int> diff(v);
 	int i = std::accumulate(v.begin(), v.end(), 0);
 	std::adjacent_difference(diff.begin(),
-			diff.end(),
-			diff.begin());
+													 diff.end(),
+													 diff.begin());
 	diff[0] = 0;
-	for(int ii : diff)
+	for (int ii : diff)
 	{
 		cout << ii << ' ';
 	}

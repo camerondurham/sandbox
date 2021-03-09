@@ -33,7 +33,7 @@ int main() {
 }
 ```
 
--------------
+---
 
 ```cpp
 Default // temp
@@ -60,9 +60,8 @@ c = doStuff();
 
 Note: if you don’t implement the moves, then no moves occur!
 
-* Will only create moves if you didn't create copy constructors
-* Will autogenerate all copy and moves if you didn't make any default constructors
-
+- Will only create moves if you didn't create copy constructors
+- Will autogenerate all copy and moves if you didn't make any default constructors
 
 Code:
 
@@ -117,12 +116,14 @@ Because a was moved into b, a.DoStuff()'s behavior is undefined
 
 4.1
 4
+
 ```
 (layout of Y)
 vtable* // 8
 char r | 3 padding | int i // 16
 char s | 7 padding // 24
 ```
+
 4.2
 32
 
@@ -136,17 +137,22 @@ double d
 ```
 
 (vtable for Y)
+
 ```
 [0] Y::b
 [1] Y::~Y
 ```
+
 4.4
+
 ```
 [0] Z::b
 [1] Z::~Z
 [2] Z::w
 ```
+
 5
+
 ```cpp
 class Vector2 {
     float X, Y;
@@ -162,19 +168,21 @@ public:
     friend bool operator==(const Vector3& lhs, const Vector3& rhs);
 };
 ```
+
 6.1
 Any two of these:
-* Use a switch of an if/else if/etc
-* Use operator += instead of operator+
-* Declare Str outside of the loop so it's not constructed on every iteration
 
-6.2
-If the string is below a "small" size which may be around 20 bytes, then it's possible to save the string in memory without using dynamic allocation, which makes it faster.
+- Use a switch of an if/else if/etc
+- Use operator += instead of operator+
+- Declare Str outside of the loop so it's not constructed on every iteration
 
-6.3
-Inline functions don't have the overhead of actually calling a function because effectively the code is copy/pasted everywhere the inlined "function" is "called"
+  6.2
+  If the string is below a "small" size which may be around 20 bytes, then it's possible to save the string in memory without using dynamic allocation, which makes it faster.
 
-7.1
+  6.3
+  Inline functions don't have the overhead of actually calling a function because effectively the code is copy/pasted everywhere the inlined "function" is "called"
+
+  7.1
 
 ```
 vector<double> result;
@@ -187,6 +195,7 @@ std::adjacent_difference(input.begin(), input.end(),
 result[0] = 0.0;
 return result;
 ```
+
 7.2
 (the signature should return a vector of int, DailyResult pairs)
 
@@ -286,7 +295,6 @@ Vector::Vector(const Vector& rhs)
 }
 ```
 
-
 9.3
 
 ```cpp
@@ -300,7 +308,6 @@ Vector::Vector(Vector&& rhs)
  rhs.mCapacity = 0;
 }
 ```
-
 
 9.4
 
@@ -381,12 +388,9 @@ v.push_back(toWrite[1]);
 return v;
 ```
 
-
-----------------------
-
+---
 
 ## Move Notes
-
 
 ```cpp
 Test doStuff() {
@@ -401,18 +405,16 @@ int main() {
 }
 ```
 
-
 When do move semantics do you no good?
 
-* No move operations: The object to be moved from fails to offer move
+- No move operations: The object to be moved from fails to offer move
   operations. The move request therefore becomes a copy request.
-* Move not faster: The object to be moved from has move operations that are no
+- Move not faster: The object to be moved from has move operations that are no
   faster than its copy operations.
-* Move not usable: The context in which the moving would take place requires a
+- Move not usable: The context in which the moving would take place requires a
   move operation that emits no exceptions, but that operation isn’t declared
   noexcept.
-* Source object is an `lvalue`, with a few exceptions
-
+- Source object is an `lvalue`, with a few exceptions
 
 ### xvalue and `std::move`
 
@@ -452,18 +454,18 @@ for (int i = 0; i < 1000; i+=4)
 
 If you're compelled to implement any of the following, implement all of these:
 
-* Destructor
-* Copy Constructor
-* Assignment Operator
-* Move Constructor
-* Move Assignment Operator
-
+- Destructor
+- Copy Constructor
+- Assignment Operator
+- Move Constructor
+- Move Assignment Operator
 
 **Rule of zero** in modern c++ says you shouldn't have to overload any of the five member functions!
 
 Avoid using `new` altogether and instead use
-* STL collections
-* Smart pointers
+
+- STL collections
+- Smart pointers
 
 ### String Example
 
@@ -483,7 +485,6 @@ Avoid using `new` altogether and instead use
 ```
 
 #### copy constructor
-
 
 ```cpp
  // Copy constructor
@@ -520,7 +521,6 @@ Avoid using `new` altogether and instead use
 ```
 
 #### destructor
-
 
 ```cpp
  // Destructor
@@ -574,6 +574,7 @@ Avoid using `new` altogether and instead use
   return *this;
  }
 ```
+
 #### plus equals operator (not R5)
 
 ```cpp
@@ -607,6 +608,4 @@ Avoid using `new` altogether and instead use
 };
 ```
 
-
 ## Functional Programming
-
