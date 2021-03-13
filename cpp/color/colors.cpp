@@ -19,20 +19,21 @@ int main(int argc, char** argv) {
 	  {"BG_YELLOW", BgColor::YELLOW},
 	  {"BG_GREEN", BgColor::GREEN},
 	  {"BG_RED", BgColor::RED},
-	  {"BG_PINK", BgColor::PINK}
+	  {"BG_PINK", BgColor::PINK},
+	  {"BG_WHITE", BgColor::WHITE},
+	  {"BG_BLACK", BgColor::BLACK}
   };
 
   for (auto it = m.begin(); it != m.end(); ++it)
   {
 	  std::cout << it->second << " " << it->first << "     " << Color::RESET << "\n";
   }
-  
+
   // Trans Pride!
 
-  std::cout << BgColor::BLUE << "                         \n";
-  std::cout << BgColor::PINK << "                         \n";
-  std::cout << BgColor::YELLOW << "                         \n";
-  std::cout << BgColor::PINK << "                         \n";
-  std::cout << BgColor::BLUE << "                         \n";
-  std::cout << BgColor::RESET;
+  std::cout <<   BgColor::BLUE << "                         " << BgColor::RESET << "\n";
+  std::cout <<   BgColor::PINK << "                         " << BgColor::RESET << "\n";
+  std::cout << BgColor::WHITE << "                         " << BgColor::RESET << "\n";
+  std::cout <<   BgColor::PINK << "                         " << BgColor::RESET << "\n";
+  std::cout <<   BgColor::BLUE << "                         " << BgColor::RESET << "\n";
 }
