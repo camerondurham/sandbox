@@ -10,8 +10,15 @@
 template<typename Vec>
 using Scalar = std::decay<decltype(Vec()[0])>::type;
 
+
+// this ensures floating point representation of
+// the inner Vec type is possible
+// and also that a size function is implemented on the function
 template<typename Vec>
-concept FloatVec = std::floating_point<Scalar<Vec>>;
+concept FloatVec = std::floating_point<Scalar<Vec>> &&
+requires(Vec vec) {
+    { vec.size() } -> std::integral;
+};
 
 
 template<FloatVec Vec>
