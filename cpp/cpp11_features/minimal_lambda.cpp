@@ -10,4 +10,5 @@ int main() {
                              return std::move(s) + ',' + std::to_string(a);
                            });
   printf(s.c_str());
+  printf("\n");
 }
