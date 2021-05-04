@@ -7,3 +7,5 @@ Containers have
 	* container can only see limited version of processes
 	* restrict the views process has of the things on the host machine
 
+Assumes filesystem exists at `/container/ubuntu-fs`
+
