@@ -49,4 +49,9 @@ fn main() {
         "November",
         "December",
     ];
+
+    // panics at runtime since Rust checks the index of the array before accessing it
+    // for i in 0..20 {
+    //     println!("{}", months[i]);
+    // }
 }

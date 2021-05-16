@@ -9,6 +9,8 @@ fn main() {
 
     let x = five();
     println!("x = five(): {}", x);
+    x += 1;
+    println!("x: {}", x);
 }
 
 fn print_number(x: i32) {
@@ -16,7 +18,9 @@ fn print_number(x: i32) {
 }
 
 fn five() -> i32 {
-    // this is a very unusual way to write a function
-    // it's cool
     5
+}
+
+fn test() -> u8 {
+    100
 }

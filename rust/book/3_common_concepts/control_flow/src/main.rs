@@ -8,8 +8,10 @@ fn main() {
         println!("condition was false");
     }
 
-    // using if in a let statemetn
+    // using if in a let statement
     let condition = true;
+
+    // let statements be expressions with { 4 }...
     let _number = if condition { 4 } else { 2 };
 
     println!("and i...");
