@@ -1,8 +1,9 @@
 # Enums
 
-Rust's enums are most similar to *algebraic data types* in functional languages such as F#, OCaml, and Haskell.
 
 ## Algebraic data type
+
+Rust's enums are most similar to *algebraic data types* in functional languages such as F#, OCaml, and Haskell.
 
 A type formed by combining other types (a *composite type*). Two common classes are
 product types (i.e. tuples and records) and sum types (i.e. tagged or disjoint unions).
@@ -30,7 +31,7 @@ References:
 * https://en.wikipedia.org/wiki/Algebraic_data_type
 
 
-## Defining an Enum
+### Defining an Enum in Rust
 
 ```rust
 enum IpAddrKind {
@@ -63,7 +64,7 @@ let home = IpAddr::V4(127,0,0,1);
 let loopback = IpAddr::V6(String::from("::1"));
 ```
 
-## Option
+### Option
 
 The option type as defined by the standard library:
 
