@@ -1,49 +1,49 @@
+mod organized;
+
+pub use crate::organized::another_library;
+pub use crate::organized::inner_library;
+
 fn utility() {}
 
-mod organized {
 
-    pub struct Data {
-        pub message: String,
-        id: String,
-    }
-
-    pub mod inner_library {
-        pub fn helper() {
-            private();
-            // super acts like `..` in a directory structure
-            super::super::utility();
-        }
-        fn private() {}
-    }
-
-    pub mod another_library {
-        pub fn helper() {}
-    }
-
-    fn some_function() {
-        // relative path
-        inner_library::helper();
-
-        // absolute path
-        crate::organized::another_library::helper();
-
-        // access functions above the current `organized` module
-        super::utility();
-    }
-
-    pub fn msg(msg: &str) -> Data {
-        Data {
-            message: String::from(msg),
-            id: String::from("12345"),
-        }
-    }
-
+pub struct Data {
+    pub message: String,
+    id: String,
 }
 
+pub mod in_file_library {
+    pub fn helper() {
+        private();
+        crate::utility();
+    }
+    fn private() {}
+}
+
+fn some_function() {
+    // relative path
+    inner_library::helper();
+
+    // absolute path
+    crate::organized::another_library::helper();
+    organized::another_library::helper();
+
+    // access functions above the current `organized` module
+    crate::utility();
+}
+
+pub fn message(msg: &str) -> Data {
+    Data {
+        message: String::from(msg),
+        id: String::from("12345"),
+    }
+}
+
+
 fn helper_function() {
-    organized::inner_library::helper();
+    inner_library::helper();
+    in_file_library::helper();
 }
 
 pub fn send_message(msg: &str) {
-    let msg = organized::msg("hello, world!");
+    let _msg = message(msg); 
 }
