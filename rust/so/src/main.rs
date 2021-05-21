@@ -10,12 +10,6 @@ fn log_http_response(resp: &Response) {
     println!("{:#?}", resp);
 }
 
-async fn pretty_print(resp: Response) -> Result<(), Box<dyn std::error::Error>> {
-    let parsed: serde_json::Value = serde_json::from_str(&resp.text().await?)?;
-    println!("Parsed json: {:#?}", parsed);
-    Ok(())
-}
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::Client::builder()
@@ -30,7 +24,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log_http_response(&resp);
 
-    pretty_print(resp);
+    let parsed: serde_json::Value = serde_json::from_str(&resp.text().await?)?;
+    println!("Parsed json: {:#?}", parsed);
 
     Ok(())
 }
