@@ -1,11 +1,23 @@
-use reqwest::header::{ACCEPT_ENCODING};
+use reqwest::{Response, header::{ACCEPT_ENCODING}};
 use serde_json;
 
+fn auth() {
+    // TODO: implement auth flow specified in https://api.stackexchange.com/docs/authentication
+}
+
+fn log_http_response(resp: &Response) {
+    println!("Status: {}", resp.status());
+    println!("{:#?}", resp);
+}
+
+async fn pretty_print(resp: Response) -> Result<(), Box<dyn std::error::Error>> {
+    let parsed: serde_json::Value = serde_json::from_str(&resp.text().await?)?;
+    println!("Parsed json: {:#?}", parsed);
+    Ok(())
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    
-    
     let client = reqwest::Client::builder()
     .gzip(true)
     .build()?;
@@ -16,11 +28,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .send()
     .await?;
 
-    // let resp = reqwest::get("https://httpbin.org/ip")
+    log_http_response(&resp);
 
-    println!("Status: {}", resp.status());
-    println!("{:#?}", resp);
-    let parsed: serde_json::Value = serde_json::from_str(&resp.text().await?)?;
-    println!("Parsed json: {:#?}", parsed);
+    pretty_print(resp);
+
     Ok(())
 }
