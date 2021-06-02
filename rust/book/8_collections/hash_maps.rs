@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::Vector;
 
 fn main() {
     let mut scores = HashMap::new();
@@ -9,6 +10,8 @@ fn main() {
     let teams = vec![String::from("Blue"), String::from("Yellow")];
     let initial_scores = vec![10, 50];
 
+    // type specifier needed to collect since it's possible
+    // to collect into other containers
     let mut scores: HashMap<_, _> = teams.into_iter().zip(initial_scores.into_iter()).collect();
 
     for (key, value) in &scores {
