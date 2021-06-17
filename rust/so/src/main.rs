@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let resp = client
     .get(format!("{}/{}/{}/{}", API_V2_2_BASE_URL, "users",user_id, "answers"))
     .header(ACCEPT_ENCODING,"gzip")
-    .query(&[("order", "desc"), ("sort","activity"),("site","stackoverflow")])
+    .query(&[("order", "desc"), ("sort","activity"),("site","stackoverflow"),("filter", "!nL_HTxMBeP")]) // this filter adds the body in markdown and normal body
     .send()
     .await?;
 
