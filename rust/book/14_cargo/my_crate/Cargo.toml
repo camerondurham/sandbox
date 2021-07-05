@@ -1,16 +1,10 @@
 [package]
-name = "minigrep"
+name = "my_crate"
 version = "0.1.0"
+license = "MIT OR Apache-2.0"
 authors = ["Cameron Durham <cdurham@usc.edu>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-# see more profile settings here: https://doc.rust-lang.org/cargo/reference/profiles.html
-[profile.dev]
-opt-level = 1
-
-[profile.release]
-opt-level = 3
